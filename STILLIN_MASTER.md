@@ -127,6 +127,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY # Supabase anon key (public, RLS protects data)
 SUPABASE_SERVICE_ROLE_KEY    # Supabase service role (server only, never expose to browser)
 GEMINI_API_KEY               # Google Gemini 1.5 Flash (free tier, AI explanations)
 RESEND_API_KEY               # Resend email (add later, leave blank for now)
+CRON_SECRET                  # Protects /api/cron/refresh from being called by anyone except Vercel
 ```
 
 **Rules:**
