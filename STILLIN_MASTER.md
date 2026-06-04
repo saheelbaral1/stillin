@@ -121,7 +121,7 @@ El Salvador: 46, Cuba: 47, Trinidad and Tobago: 48
 These are the only environment variables in this project. Never add others without updating this file.
 
 ```
-BALLDONTLIE_API_KEY          # BallDontLie FIFA API authentication
+FOOTBALLDATA_API_KEY         # football-data.org World Cup standings API
 NEXT_PUBLIC_SUPABASE_URL     # Supabase project URL (public, safe for browser)
 NEXT_PUBLIC_SUPABASE_ANON_KEY # Supabase anon key (public, RLS protects data)
 SUPABASE_SERVICE_ROLE_KEY    # Supabase service role (server only, never expose to browser)
@@ -132,7 +132,7 @@ CRON_SECRET                  # Protects /api/cron/refresh from being called by a
 
 **Rules:**
 - Variables prefixed `NEXT_PUBLIC_` are safe to use in client components
-- `SUPABASE_SERVICE_ROLE_KEY` and `GEMINI_API_KEY` and `BALLDONTLIE_API_KEY` are SERVER ONLY — never import in client components
+- `SUPABASE_SERVICE_ROLE_KEY` and `GEMINI_API_KEY` and `FOOTBALLDATA_API_KEY` are SERVER ONLY — never import in client components
 - Never log environment variables
 
 ---

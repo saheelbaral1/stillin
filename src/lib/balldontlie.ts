@@ -1,22 +1,18 @@
 // src/lib/balldontlie.ts
 //
-// Thin, fully-typed wrapper around the BallDontLie FIFA World Cup API.
+// Thin, fully-typed wrapper around the football-data.org World Cup API.
 //
-// SERVER ONLY: this module reads `process.env.BALLDONTLIE_API_KEY`, which is a
+// SERVER ONLY: this module reads `process.env.FOOTBALLDATA_API_KEY`, which is a
 // secret (see Section 5 of STILLIN_MASTER.md). Never import this file from a
 // client component — it would leak the key into the browser bundle.
 //
 // Per the master file: every API call has explicit error handling and a 10s
 // timeout, and there are no `any` types anywhere.
 //
-// NOTE / FLAG: STILLIN_MASTER.md specifies the *output* shapes we want
-// (TeamRow, GroupStandings) but not the exact raw JSON the BallDontLie FIFA
-// endpoints return. The `Raw*` interfaces below are a best-guess based on the
-// standard BallDontLie `{ data: [...] }` envelope and should be verified
-// against the live API. The public types we export are stable regardless of how
-// the raw mapping changes.
+// The public types (TeamRow, GroupStandings, Match) are stable — the rest of
+// the app depends on them and they do not change when this API mapping changes.
 
-const API_BASE = "https://api.balldontlie.io/fifa/worldcup/v1";
+const API_BASE = "https://api.football-data.org/v4";
 
 // How long we wait before aborting any single request, in milliseconds.
 // Required by the master file ("every API call must have a timeout").
@@ -30,17 +26,17 @@ const REQUEST_TIMEOUT_MS = 10_000;
 // fields the qualification logic (Section 4) needs to rank teams, including the
 // two tie-breakers that are not raw goal stats: fairPlay and fifaRanking.
 export type TeamRow = {
-  team: string; // Team display name, e.g. "Brazil"
-  group: string; // Group letter this team belongs to, e.g. "D"
-  played: number; // Matches played
-  won: number; // Matches won
-  drawn: number; // Matches drawn
-  lost: number; // Matches lost
-  points: number; // Competition points (win = 3, draw = 1)
-  goalsFor: number; // Goals scored
+  team: string;       // Team display name, e.g. "Brazil"
+  group: string;      // Group letter this team belongs to, e.g. "D"
+  played: number;     // Matches played
+  won: number;        // Matches won
+  drawn: number;      // Matches drawn
+  lost: number;       // Matches lost
+  points: number;     // Competition points (win = 3, draw = 1)
+  goalsFor: number;   // Goals scored
   goalsAgainst: number; // Goals conceded
-  goalDiff: number; // goalsFor - goalsAgainst
-  fairPlay: number; // Fair-play points (LOWER is better — see Section 4)
+  goalDiff: number;   // goalsFor - goalsAgainst
+  fairPlay: number;   // Fair-play points (LOWER is better — see Section 4)
   fifaRanking: number; // Pre-tournament FIFA ranking (LOWER is better)
 };
 
@@ -50,12 +46,11 @@ export type GroupStandings = {
   teams: TeamRow[];
 };
 
-// A live (or any) match returned by the /games endpoint. We keep this minimal:
-// the only thing the product needs from /games is whether a match is currently
-// in progress, so the cron job can mark the cache as "live".
+// A live (or any) match. The only thing the cron job needs from this is whether
+// any match is currently IN_PLAY so it can set is_live on the cache row.
 export type Match = {
   id: number;
-  status: string; // e.g. "in_progress", "final", "scheduled"
+  status: string;    // e.g. "IN_PLAY", "FINISHED", "TIMED"
   homeTeam: string;
   awayTeam: string;
   homeScore: number;
@@ -63,65 +58,69 @@ export type Match = {
 };
 
 // ---------------------------------------------------------------------------
-// Raw API shapes (best-guess — see FLAG note at top of file).
+// Raw API shapes for football-data.org
 // ---------------------------------------------------------------------------
 
-// The BallDontLie APIs wrap their payloads in a `data` array. We type the inner
-// objects loosely-but-explicitly (optional fields, no `any`) so the mappers can
-// defend against missing fields without crashing.
-type RawStandingsRow = {
-  team?: { name?: string; fifa_ranking?: number };
-  team_name?: string;
-  group?: string;
-  group_name?: string;
-  played?: number;
-  games_played?: number;
+// GET /competitions/WC/standings response
+type RawTableEntry = {
+  position?: number;
+  team?: { id?: number; name?: string; crest?: string };
+  playedGames?: number;
   won?: number;
-  wins?: number;
-  drawn?: number;
-  draws?: number;
+  draw?: number;   // football-data.org uses "draw", not "drawn"
   lost?: number;
-  losses?: number;
   points?: number;
-  goals_for?: number;
-  goals_against?: number;
-  goal_difference?: number;
-  fair_play_points?: number;
-  fifa_ranking?: number;
+  goalsFor?: number;
+  goalsAgainst?: number;
+  goalDifference?: number;
+};
+
+type RawStandingGroup = {
+  stage?: string;
+  type?: string;   // "TOTAL" | "HOME" | "AWAY" — we only want "TOTAL"
+  group?: string;  // e.g. "GROUP_A"
+  table?: RawTableEntry[];
 };
 
 type RawStandingsResponse = {
-  data?: RawStandingsRow[];
+  standings?: RawStandingGroup[];
+};
+
+// GET /competitions/WC/matches?status=IN_PLAY response
+type RawMatchTeam = {
+  id?: number;
+  name?: string;
+};
+
+type RawScore = {
+  fullTime?: { home?: number | null; away?: number | null };
 };
 
 type RawMatch = {
   id?: number;
   status?: string;
-  home_team?: { name?: string };
-  away_team?: { name?: string };
-  home_team_name?: string;
-  away_team_name?: string;
-  home_team_score?: number;
-  away_team_score?: number;
+  homeTeam?: RawMatchTeam;
+  awayTeam?: RawMatchTeam;
+  score?: RawScore;
 };
 
-type RawGamesResponse = {
-  data?: RawMatch[];
+type RawMatchesResponse = {
+  matches?: RawMatch[];
 };
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-// Performs an authenticated GET against the BallDontLie FIFA API with a hard
+// Performs an authenticated GET against the football-data.org API with a hard
 // timeout. Centralised here so both public functions share identical auth,
 // timeout, and error-handling behaviour and we never duplicate the fetch logic.
 // Throws a descriptive Error on missing key, timeout, or non-2xx response.
 async function apiGet<T>(path: string): Promise<T> {
-  const apiKey = process.env.BALLDONTLIE_API_KEY;
+  const apiKey = process.env.FOOTBALLDATA_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "BALLDONTLIE_API_KEY is not set — cannot call the BallDontLie FIFA API.",
+      "FOOTBALLDATA_API_KEY is not set — cannot call the football-data.org API.",
     );
   }
 
@@ -133,7 +132,7 @@ async function apiGet<T>(path: string): Promise<T> {
   try {
     const response = await fetch(`${API_BASE}${path}`, {
       method: "GET",
-      headers: { Authorization: apiKey },
+      headers: { "X-Auth-Token": apiKey },
       signal: controller.signal,
       // Always hit the network — this data changes every minute during matches,
       // so a stale cached fetch would defeat the whole point of the cron job.
@@ -142,7 +141,7 @@ async function apiGet<T>(path: string): Promise<T> {
 
     if (!response.ok) {
       throw new Error(
-        `BallDontLie request to ${path} failed with HTTP ${response.status} ${response.statusText}`,
+        `football-data.org request to ${path} failed with HTTP ${response.status} ${response.statusText}`,
       );
     }
 
@@ -152,46 +151,57 @@ async function apiGet<T>(path: string): Promise<T> {
     // else with the path so callers know exactly which request broke.
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error(
-        `BallDontLie request to ${path} timed out after ${REQUEST_TIMEOUT_MS}ms.`,
+        `football-data.org request to ${path} timed out after ${REQUEST_TIMEOUT_MS}ms.`,
       );
     }
     if (error instanceof Error) {
-      throw new Error(`BallDontLie request to ${path} failed: ${error.message}`);
+      throw new Error(
+        `football-data.org request to ${path} failed: ${error.message}`,
+      );
     }
-    throw new Error(`BallDontLie request to ${path} failed with an unknown error.`);
+    throw new Error(
+      `football-data.org request to ${path} failed with an unknown error.`,
+    );
   } finally {
     // Always clear the timer so it can't fire after a successful response.
     clearTimeout(timeout);
   }
 }
 
-// Coerces a possibly-undefined number into a safe number, defaulting to 0.
-// Used so a missing field in the raw payload becomes 0 instead of NaN/undefined,
-// keeping every TeamRow numeric field strictly a `number`.
-function num(value: number | undefined): number {
+// Coerces a possibly-undefined or null number to a safe finite number.
+// Null can appear in score fields (e.g. score.fullTime.home before KO).
+function num(value: number | null | undefined): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-// Maps one raw standings row into our clean TeamRow. Tolerates the two most
-// likely field-naming conventions for each value (see FLAG note) and derives
-// goalDiff if the API doesn't send it directly.
-function toTeamRow(raw: RawStandingsRow): TeamRow {
-  const goalsFor = num(raw.goals_for);
-  const goalsAgainst = num(raw.goals_against);
+// Extracts the single group letter from the football-data.org group string.
+// "GROUP_A" → "A", "GROUP_B" → "B", etc.
+// Falls back to the whole string if it doesn't match the expected pattern, so
+// no group is silently dropped due to an unexpected format.
+function groupLetter(raw: string | undefined): string {
+  if (!raw) return "";
+  const match = raw.match(/^GROUP_([A-Z]+)$/);
+  return match ? match[1] : raw;
+}
 
+// Maps one raw table entry into our clean TeamRow.
+// fairPlay is 0 because football-data.org does not provide fair-play points;
+// fifaRanking is 99 as a safe placeholder — qualification.ts overwrites it with
+// the real pre-tournament ranking from the hardcoded teams.ts list.
+function toTeamRow(entry: RawTableEntry, group: string): TeamRow {
   return {
-    team: raw.team?.name ?? raw.team_name ?? "",
-    group: raw.group ?? raw.group_name ?? "",
-    played: num(raw.played ?? raw.games_played),
-    won: num(raw.won ?? raw.wins),
-    drawn: num(raw.drawn ?? raw.draws),
-    lost: num(raw.lost ?? raw.losses),
-    points: num(raw.points),
-    goalsFor,
-    goalsAgainst,
-    goalDiff: num(raw.goal_difference ?? goalsFor - goalsAgainst),
-    fairPlay: num(raw.fair_play_points),
-    fifaRanking: num(raw.team?.fifa_ranking ?? raw.fifa_ranking),
+    team: entry.team?.name ?? "",
+    group,
+    played: num(entry.playedGames),
+    won: num(entry.won),
+    drawn: num(entry.draw),   // API field is "draw", our type uses "drawn"
+    lost: num(entry.lost),
+    points: num(entry.points),
+    goalsFor: num(entry.goalsFor),
+    goalsAgainst: num(entry.goalsAgainst),
+    goalDiff: num(entry.goalDifference),
+    fairPlay: 0,  // not provided by football-data.org
+    fifaRanking: 99, // placeholder; overridden by teams.ts lookup in qualification.ts
   };
 }
 
@@ -199,50 +209,54 @@ function toTeamRow(raw: RawStandingsRow): TeamRow {
 // Public API
 // ---------------------------------------------------------------------------
 
-// Fetches the current group standings for all 12 World Cup groups and returns
-// them grouped by group letter. We group here (rather than returning a flat
-// list) because the qualification logic operates per-group, then cross-group
-// only on the third-placed teams. Throws a descriptive error on any failure.
+// Fetches the current group standings for the World Cup and returns them as
+// GroupStandings[], one entry per group letter (A–L).
+//
+// football-data.org returns three variants per group (TOTAL, HOME, AWAY); we
+// only keep TOTAL since that is the one that matches official FIFA standings.
+// The table array within each group is already sorted by position (1st → last),
+// so we preserve that order — the qualification logic trusts standings order for
+// head-to-head results that we cannot recompute from the raw data.
 export async function fetchStandings(): Promise<GroupStandings[]> {
-  const payload = await apiGet<RawStandingsResponse>("/group_standings");
-  const rows = payload.data ?? [];
+  const payload = await apiGet<RawStandingsResponse>("/competitions/WC/standings");
+  const standingGroups = payload.standings ?? [];
 
-  // Bucket every team row by its group letter, preserving the API's order
-  // within each group (the API returns rows already sorted by position).
-  const byGroup = new Map<string, TeamRow[]>();
-  for (const raw of rows) {
-    const teamRow = toTeamRow(raw);
-    const existing = byGroup.get(teamRow.group);
-    if (existing) {
-      existing.push(teamRow);
-    } else {
-      byGroup.set(teamRow.group, [teamRow]);
+  const result: GroupStandings[] = [];
+
+  for (const sg of standingGroups) {
+    // Skip HOME and AWAY views — we only want the overall (TOTAL) standings.
+    if (sg.type !== "TOTAL") continue;
+
+    const letter = groupLetter(sg.group);
+    const teams = (sg.table ?? []).map((entry) => toTeamRow(entry, letter));
+
+    if (letter && teams.length > 0) {
+      result.push({ groupName: letter, teams });
     }
   }
 
-  // Emit groups in alphabetical order (A, B, C, ...) for stable, predictable
-  // output regardless of the order the API listed them in.
-  return [...byGroup.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([groupName, teams]) => ({ groupName, teams }));
+  // Sort groups alphabetically (A, B, C, …) for stable, predictable output.
+  return result.sort((a, b) => a.groupName.localeCompare(b.groupName));
 }
 
-// Fetches all games and returns only those currently in progress. The cron job
-// uses this to flag the standings cache as "live" so the UI can poll faster.
-// Returns an empty array when no match is live (the common case), never throws
-// for "no live games" — only for an actual request failure.
+// Fetches matches currently in progress and returns them. The cron job uses
+// this solely to set is_live = true on the cache row so the UI knows to expect
+// fast-changing data. Returns an empty array when no match is live (the common
+// case) — only throws for actual request failures, not for "nothing is live".
 export async function fetchLiveMatches(): Promise<Match[]> {
-  const payload = await apiGet<RawGamesResponse>("/games");
-  const games = payload.data ?? [];
+  const payload = await apiGet<RawMatchesResponse>(
+    "/competitions/WC/matches?status=IN_PLAY",
+  );
+  const matches = payload.matches ?? [];
 
-  return games
-    .filter((game) => game.status === "in_progress")
-    .map((game) => ({
-      id: num(game.id),
-      status: game.status ?? "",
-      homeTeam: game.home_team?.name ?? game.home_team_name ?? "",
-      awayTeam: game.away_team?.name ?? game.away_team_name ?? "",
-      homeScore: num(game.home_team_score),
-      awayScore: num(game.away_team_score),
+  return matches
+    .filter((m) => m.status === "IN_PLAY")
+    .map((m) => ({
+      id: num(m.id),
+      status: m.status ?? "",
+      homeTeam: m.homeTeam?.name ?? "",
+      awayTeam: m.awayTeam?.name ?? "",
+      homeScore: num(m.score?.fullTime?.home),
+      awayScore: num(m.score?.fullTime?.away),
     }));
 }
