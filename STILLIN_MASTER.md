@@ -173,6 +173,7 @@ stillin/
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx                    # Home page — team picker + status card
+│   │   ├── HomeClient.tsx              # Client wrapper — all interactive state lives here
 │   │   ├── layout.tsx                  # Root layout — fonts, metadata
 │   │   ├── globals.css                 # Tailwind base only
 │   │   └── api/
