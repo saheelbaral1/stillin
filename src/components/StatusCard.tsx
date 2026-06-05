@@ -156,7 +156,7 @@ export default function StatusCard({ status }: Props) {
   const border = isPreTournament
     ? "1px solid var(--gold)"
     : "1px solid rgba(201,168,76,0.4)";
-  const label = LABELS[status.status];
+  const label = isPreTournament ? "JUNE 11" : LABELS[status.status];
   // Multi-word labels (HANGING ON, IN DANGER) split across two lines; single-
   // word labels (THROUGH, OUT) render on one. Multi-word uses a smaller size so
   // the two-line block stays proportional — mirroring the reference StatusCard.jsx.

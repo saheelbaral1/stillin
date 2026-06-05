@@ -123,7 +123,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // --- 2. Cache miss: call Groq ---
+    // --- 2. Pre-tournament shortcut ---
+    // If the tournament hasn't started yet, HANGING_ON means "we don't know
+    // anything yet" — calling Groq would produce a generic non-answer, so we
+    // return a hardcoded explanation instead and cache it like any other result.
+    // The date guard ensures this branch stops firing once June 11 arrives,
+    // so a real mid-tournament HANGING_ON explanation can be generated fresh.
+    const TOURNAMENT_START = new Date("2026-06-11T00:00:00Z");
+    if (status === "HANGING_ON" && new Date() < TOURNAMENT_START) {
+      const preTournamentExplanation =
+        "The World Cup hasn't kicked off yet — first matches are on June 11. " +
+        "Right now every team is technically equal. " +
+        "Check back once the group stage begins and we'll tell you exactly where things stand.\nRELAX";
+
+      const { error: insertError } = await supabaseServer
+        .from("ai_explanations")
+        .insert({ team, status, explanation: preTournamentExplanation });
+
+      if (insertError && !insertError.message.includes("duplicate")) {
+        throw new Error(`Supabase insert failed: ${insertError.message}`);
+      }
+
+      return NextResponse.json({ explanation: preTournamentExplanation, cached: false });
+    }
+
+    // --- 3. Cache miss: call Groq ---
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       throw new Error("GROQ_API_KEY is not set — cannot call Groq API.");
