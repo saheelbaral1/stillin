@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
 /*
-  Design-system font CSS variables are injected onto <html> by next/font/google
-  in layout.tsx (--font-syne, --font-dm-sans, --font-dm-mono).
-
-  Registering them in @theme makes `font-syne`, `font-dm-sans`, `font-dm-mono`
-  available as first-class Tailwind utilities across the whole app.
-  The variable names intentionally differ (--syne-font vs --font-syne) so Tailwind's
-  @theme registration doesn't create a circular self-reference.
+  Font CSS variables injected by next/font on <html> via the variable option.
+  Registering them here gives Tailwind v4 `font-display`, `font-body`,
+  `font-mono` utilities. The apparent self-reference resolves correctly because
+  next/font's inline style (higher specificity than :root) provides the value.
 */
 @theme {
-  --font-syne: var(--font-syne);
-  --font-dm-sans: var(--font-dm-sans);
-  --font-dm-mono: var(--font-dm-mono);
+  --font-display: var(--font-display); /* Saira Condensed 900 — status labels ONLY */
+  --font-body:    var(--font-body);    /* DM Sans — everything else               */
+  --font-mono:    var(--font-mono);    /* DM Mono — "still in?" wordmark ONLY     */
 }
 
-/* Live-status pulse — used in StatusCard for the HANGING_ON / IN_DANGER dot */
+/* ── Design tokens ──────────────────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --gold:       #C9A84C;
+  --gold-deep:  #A8842F;
+  --gold-soft:  #F4ECCF;
+  --ai-grad:    linear-gradient(90deg, #C9A84C 0%, #9B6FD4 100%);
+
+  /* Neutrals — light theme */
+  --bg:         #FFFFFF;
+  --surface:    #FFFFFF;
+  --surface-2:  #FAFAF8;
+  --ink:        #0A0A0A;
+  --ink-2:      #525252;
+  --ink-3:      #8A8A8A;
+  --line:       #E7E5E0;
+  --line-strong:#0A0A0A;
+
+  /* Status fills — the four canonical card backgrounds */
+  --through-fill:   #14532D;
+  --through-ink:    #15803D;
+  --hanging-fill:   #92400E;
+  --hanging-ink:    #92400E;
+  --danger-fill:    #7F1D1D;
+  --danger-ink:     #991B1B;
+  --out-fill:       #1F2937;
+  --out-ink:        #374151;
+
+  /* On-fill text tiers */
+  --on-fill:        #FFFFFF;
+  --on-fill-dim:    rgba(255,255,255,0.72);
+  --on-fill-faint:  rgba(255,255,255,0.42);
+
+  /* Radii */
+  --r-card:  12px;
+  --r-input: 14px;
+  --r-btn:   13px;
+  --r-pill:  999px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-hero: 0 8px 40px rgba(0,0,0,0.12);
+  --shadow-pop:  0 8px 24px -8px rgba(10,10,10,0.20);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur:  160ms;
+}
+
+/* ── Live heartbeat animations ──────────────────────────────────────────── */
 @keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.35; }
+  0%,  100% { opacity: 1;    transform: scale(1);    }
+  50%        { opacity: 0.35; transform: scale(0.82); }
+}
+@keyframes live-ring {
+  0%   { opacity: 0.55; transform: scale(1);   }
+  70%  { opacity: 0;    transform: scale(2.6); }
+  100% { opacity: 0;    transform: scale(2.6); }
 }
 
-.animate-live-pulse {
-  animation: live-pulse 1.5s ease-in-out infinite;
+/* Loading bar slide — used by HomeClient's team-fetch loading state */
+@keyframes progress-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+.live-dot  { animation: live-pulse 1.6s ease-in-out infinite; }
+.live-ring { animation: live-ring  1.6s ease-out    infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="live"] { animation: none !important; }
 }

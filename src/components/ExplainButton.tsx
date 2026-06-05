@@ -5,18 +5,17 @@ import { useState } from "react";
 type Props = {
   teamName: string;
   status: string;
-  detail: string; // reserved — available for richer context in the future
+  detail: string;
 };
 
 type UIState = "idle" | "loading" | "success" | "error";
 
-// The Gemini prompt (Section 10) ends every explanation with "RELAX" or
-// "NERVOUS" on its own line. This splits that verdict off from the body so it
-// can be styled independently — the one-word verdict is the emotional payoff of
-// the whole feature, so it deserves its own treatment.
+// The Section 10 prompt always ends with "RELAX" or "NERVOUS" on its own line.
+// Split it off for independent styling — the one-word verdict is the
+// emotional payoff and gets the Saira Condensed display face.
 function parseExplanation(raw: string): { body: string; verdict: "RELAX" | "NERVOUS" | null } {
   const lines = raw.trim().split("\n");
-  const last = lines[lines.length - 1].trim().toUpperCase();
+  const last  = lines[lines.length - 1].trim().toUpperCase();
   if (last === "RELAX" || last === "NERVOUS") {
     return { body: lines.slice(0, -1).join("\n").trim(), verdict: last };
   }
@@ -25,23 +24,19 @@ function parseExplanation(raw: string): { body: string; verdict: "RELAX" | "NERV
 
 export default function ExplainButton({ teamName, status }: Props) {
   const [uiState, setUiState] = useState<UIState>("idle");
-  const [body, setBody] = useState("");
+  const [body,    setBody]    = useState("");
   const [verdict, setVerdict] = useState<"RELAX" | "NERVOUS" | null>(null);
 
   async function handleClick() {
-    if (uiState === "success") return; // already showing — don't re-fetch
+    if (uiState === "success") return;
 
     setUiState("loading");
     try {
       const url = `/api/explain?team=${encodeURIComponent(teamName)}&status=${encodeURIComponent(status)}`;
       const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error("Non-OK response from explain API");
-      }
+      if (!res.ok) throw new Error("Non-OK response");
       const data = (await res.json()) as { explanation?: string };
-      if (!data.explanation) {
-        throw new Error("Empty explanation returned");
-      }
+      if (!data.explanation) throw new Error("Empty response");
       const parsed = parseExplanation(data.explanation);
       setBody(parsed.body);
       setVerdict(parsed.verdict);
@@ -52,48 +47,58 @@ export default function ExplainButton({ teamName, status }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 w-full">
-      {/* Trigger button — text-only style, no background */}
-      {uiState !== "success" && (
-        <button
-          onClick={handleClick}
-          disabled={uiState === "loading"}
-          className="
-            font-dm-sans text-[13px] text-[#888888]
-            underline underline-offset-2
-            bg-transparent disabled:opacity-60
-          "
-        >
-          {uiState === "loading" ? (
-            <em>Thinking…</em>
-          ) : uiState === "error" ? (
-            "Couldn't load explanation — try again"
-          ) : (
-            "Wait, what does this mean?"
-          )}
-        </button>
-      )}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+      {/* Trigger link — always visible; gold→purple gradient is the approved AI
+          content signal. Shows loading/error states inline. Hidden only once
+          the explanation is showing AND the user has no reason to re-trigger. */}
+      <button
+        onClick={handleClick}
+        disabled={uiState === "loading" || uiState === "success"}
+        style={{
+          background: "none", border: "none", cursor: uiState === "success" ? "default" : "pointer", padding: 0,
+          display: "inline-flex", alignItems: "center", gap: 6,
+          backgroundImage: "linear-gradient(90deg, #C9A84C 0%, #9B6FD4 100%)",
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          color: "transparent",
+          fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 13.5,
+          opacity: uiState === "loading" ? 0.6 : 1,
+        } as React.CSSProperties}
+      >
+        <span aria-hidden="true">✦</span>
+        {uiState === "loading" ? "Thinking…" : uiState === "error"
+          ? "Couldn't load — try again"
+          : "Wait, what does this mean?"}
+      </button>
 
-      {/* Explanation box — only shown on success */}
+      {/* Explanation box — appears below the trigger after a successful fetch */}
       {uiState === "success" && (
         <div
-          className="
-            w-full bg-white border border-[#E0DEDA] rounded-[10px]
-            px-[14px] py-3
-            font-dm-sans text-[14px] text-[#444444]
-          "
+          style={{
+            width: "100%",
+            background: "var(--surface)",
+            border: "1.5px solid var(--line)",
+            borderRadius: 12,
+            padding: "14px 15px",
+            boxShadow: "var(--shadow-card)",
+          }}
         >
-          {/* Body text — the actual explanation */}
-          <p className="leading-relaxed">{body}</p>
-
-          {/* Verdict — RELAX (green) or NERVOUS (amber), Syne 700 */}
+          <p style={{
+            fontFamily: "var(--font-body)", fontWeight: 400,
+            fontSize: 14, lineHeight: 1.55,
+            color: "var(--ink-2)",
+          }}>
+            {body}
+          </p>
           {verdict && (
-            <p
-              className={`
-                mt-2 font-syne font-bold text-[16px] tracking-wide
-                ${verdict === "RELAX" ? "text-[#16A34A]" : "text-[#D97706]"}
-              `}
-            >
+            <p style={{
+              marginTop: 10,
+              fontFamily: "var(--font-display)", fontWeight: 900,
+              fontSize: 22, letterSpacing: "0.02em",
+              textTransform: "uppercase",
+              color: verdict === "RELAX" ? "var(--through-ink)" : "var(--danger-ink)",
+            }}>
               {verdict}
             </p>
           )}

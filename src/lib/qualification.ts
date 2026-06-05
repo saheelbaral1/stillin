@@ -171,6 +171,7 @@ function fourthPlaceCanStillQualify(
 
 // Computes the full TeamStatus for a single team. This is the function the
 // /api/status route ultimately calls. Logic (per Section 3 & 4):
+//   - 0 matches played -> HANGING_ON with a pre-tournament message (neutral state).
 //   - Position 1 or 2  -> THROUGH (in an automatic qualifying spot).
 //   - Position 3       -> ranked cross-group: top 8 = HANGING_ON, else IN_DANGER.
 //   - Position 4       -> OUT if mathematically eliminated, otherwise IN_DANGER
@@ -200,6 +201,22 @@ export function getTeamStatus(
     matchesPlayed: row.played,
   };
 
+  // --- Pre-tournament: no matches played yet. ---
+  // Return a neutral holding state before the group stage begins so the UI
+  // has something sensible to show. HANGING_ON is reused as the status value
+  // (no new state is introduced per Section 3); StatusCard detects this message
+  // string and renders a grey card instead of the amber warning style.
+  if (row.played === 0) {
+    return {
+      ...base,
+      thirdPlaceRank: null,
+      status: "HANGING_ON",
+      message: "Tournament hasn't started yet",
+      detail: "First matches kick off June 11 — check back then",
+      canStillQualify: true,
+    };
+  }
+
   // --- THROUGH: top two of the group qualify automatically. ---
   if (position === 1 || position === 2) {
     return {
@@ -208,8 +225,8 @@ export function getTeamStatus(
       status: "THROUGH",
       message:
         position === 1
-          ? `Top of Group ${groupName} — already qualified`
-          : `2nd in Group ${groupName} — through to the next round`,
+          ? `Top of ${groupName} — already qualified`
+          : `2nd in ${groupName} — through to the next round`,
       detail: `${ordinal(position)} place with ${row.points} point${row.points === 1 ? "" : "s"}`,
       canStillQualify: true,
     };
@@ -231,8 +248,8 @@ export function getTeamStatus(
       thirdPlaceRank,
       status: isHangingOn ? "HANGING_ON" : "IN_DANGER",
       message: isHangingOn
-        ? `3rd in Group ${groupName} — clinging to a qualifying spot`
-        : `3rd in Group ${groupName} — outside the qualifying places`,
+        ? `3rd in ${groupName} — clinging to a qualifying spot`
+        : `3rd in ${groupName} — outside the qualifying places`,
       detail: `Currently ${ordinal(thirdPlaceRank)}-best 3rd-place team (only the top ${THIRD_PLACE_QUALIFYING_SPOTS} go through)`,
       canStillQualify: true,
     };
@@ -257,7 +274,7 @@ export function getTeamStatus(
       ...base,
       thirdPlaceRank: null,
       status: "OUT",
-      message: `${ordinal(position)} in Group ${groupName} — eliminated`,
+      message: `${ordinal(position)} in ${groupName} — eliminated`,
       detail:
         gamesRemaining > 0
           ? `Can't catch the teams above with ${gamesRemaining} game${gamesRemaining === 1 ? "" : "s"} left`
@@ -274,7 +291,7 @@ export function getTeamStatus(
     ...base,
     thirdPlaceRank: null,
     status: "IN_DANGER",
-    message: `${ordinal(position)} in Group ${groupName} — bottom but not beaten`,
+    message: `${ordinal(position)} in ${groupName} — bottom but not beaten`,
     detail:
       gamesRemaining > 0
         ? `Still alive with ${gamesRemaining} game${gamesRemaining === 1 ? "" : "s"} to play`

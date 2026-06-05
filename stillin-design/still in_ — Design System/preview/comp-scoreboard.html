@@ -1,0 +1,46 @@
+<!-- @dsCard group="Components" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:#fff}
+  .w{padding:20px 22px;display:flex;gap:12px}
+  .card{flex:1;position:relative;overflow:hidden;border-radius:var(--r-card);
+    border:1px solid rgba(201,168,76,0.4);box-shadow:var(--shadow-hero);padding:18px 12px 22px;
+    display:flex;flex-direction:column;align-items:center}
+  .depth{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 52%,rgba(0,0,0,0.20) 100%);pointer-events:none}
+  .top{position:relative;width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .grp{font-family:var(--font-body);font-weight:500;font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.7)}
+  .live{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;background:rgba(0,0,0,.22)}
+  .live span{width:6px;height:6px;border-radius:50%;background:#fff}.live b{font-family:var(--font-body);font-weight:600;font-size:8px;letter-spacing:.14em;color:#fff}
+  .flag{position:relative;font-size:40px;line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,.3))}
+  .team{position:relative;font-family:var(--font-body);font-weight:500;font-size:9.5px;letter-spacing:.18em;color:rgba(255,255,255,.92);text-transform:uppercase;margin-top:7px}
+  .lab{position:relative;font-family:var(--font-display);font-weight:900;font-size:23px;line-height:.84;letter-spacing:-.02em;color:#fff;text-transform:uppercase;text-align:center;margin-top:9px}
+  .hx{font-family:var(--font-body);font-size:9.5px;color:var(--ink-3);text-align:center;margin-top:7px}
+</style>
+</head><body>
+  <div class="w">
+    <div style="flex:1">
+      <div class="card" style="background:#14532D"><div class="depth"></div>
+        <div class="top"><span class="grp">GROUP D · 3</span></div>
+        <span class="flag">🇧🇷</span><span class="team">Brazil</span><span class="lab">Through</span></div>
+      <div class="hx">#14532D</div>
+    </div>
+    <div style="flex:1">
+      <div class="card" style="background:#92400E"><div class="depth"></div>
+        <div class="top"><span class="grp">GROUP C · 2</span><span class="live"><span></span><b>LIVE</b></span></div>
+        <span class="flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="team">England</span><span class="lab">Hanging<br>On</span></div>
+      <div class="hx">#92400E</div>
+    </div>
+    <div style="flex:1">
+      <div class="card" style="background:#7F1D1D"><div class="depth"></div>
+        <div class="top"><span class="grp">GROUP B · 2</span><span class="live"><span></span><b>LIVE</b></span></div>
+        <span class="flag">🇫🇷</span><span class="team">France</span><span class="lab">In<br>Danger</span></div>
+      <div class="hx">#7F1D1D</div>
+    </div>
+    <div style="flex:1">
+      <div class="card" style="background:#1F2937"><div class="depth"></div>
+        <div class="top"><span class="grp">GROUP K · 3</span></div>
+        <span class="flag">🇺🇸</span><span class="team">USA</span><span class="lab">Out</span></div>
+      <div class="hx">#1F2937</div>
+    </div>
+  </div>
+</body></html>

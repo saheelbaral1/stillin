@@ -2,26 +2,31 @@
 
 import { useState } from "react";
 
-type Props = {
-  teamName: string;
-};
-
+type Props = { teamName: string };
 type UIState = "idle" | "loading" | "success" | "error";
 
 export default function NotifyCapture({ teamName }: Props) {
-  const [email, setEmail] = useState("");
-  const [uiState, setUiState] = useState<UIState>("idle");
-  const [dismissed, setDismissed] = useState(false);
+  const [email,    setEmail]    = useState("");
+  const [uiState,  setUiState]  = useState<UIState>("idle");
+  const [dismissed,setDismissed]= useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // "No thanks" hides the whole component — user has signalled they don't want
-  // notifications, so showing it again would be annoying.
   if (dismissed) return null;
 
   if (uiState === "success") {
     return (
-      <p className="font-dm-sans text-[13px] text-[#444444] text-center py-2">
-        You&apos;re on the list! We&apos;ll email you when it&apos;s decided.
+      <p style={{
+        textAlign: "center",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+        fontFamily: "var(--font-body)", fontSize: 14, color: "var(--ink)",
+      }}>
+        {/* check icon */}
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+          stroke="var(--through-ink)" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        You&apos;re on the list — we&apos;ll email you the moment it&apos;s decided.
       </p>
     );
   }
@@ -39,12 +44,10 @@ export default function NotifyCapture({ teamName }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), team: teamName }),
       });
-
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
         throw new Error(body.error ?? "Something went wrong");
       }
-
       setUiState("success");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong");
@@ -53,60 +56,80 @@ export default function NotifyCapture({ teamName }: Props) {
   }
 
   return (
-    <div className="w-full flex flex-col items-center gap-2">
-      {/* Label */}
-      <p className="font-dm-sans text-[12px] text-[#888888] text-center">
+    <div>
+      {/* label with bell icon */}
+      <p style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--ink-3)",
+        marginBottom: 10,
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+        </svg>
         Notify me the moment it&apos;s decided
       </p>
 
-      {/* Input + button row */}
-      <form onSubmit={handleSubmit} className="w-full flex gap-2">
+      {/* input + button */}
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8 }}>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
           disabled={uiState === "loading"}
-          className="
-            flex-1 h-12 px-3
-            font-dm-sans text-[13px] text-[#111111] placeholder:text-[#888888]
-            bg-white border-[1.5px] border-[#E0DEDA] rounded-[10px]
-            outline-none focus:border-[#111111]
-            transition-colors disabled:opacity-60
-          "
+          style={{
+            flex: 1, height: 48, padding: "0 14px",
+            fontFamily: "var(--font-body)", fontSize: 14,
+            color: "var(--ink)",
+            background: "var(--surface)",
+            border: "1.5px solid var(--line)",
+            borderRadius: 11,
+            outline: "none",
+            transition: "border-color var(--dur) var(--ease)",
+          }}
+          onFocus={(e) => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--ink)"; }}
+          onBlur={(e)  => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"; }}
         />
         <button
           type="submit"
           disabled={uiState === "loading" || !email.trim()}
-          className="
-            h-12 px-4 shrink-0 rounded-[12px]
-            bg-[#111111] text-white
-            font-dm-sans font-medium text-[13px]
-            transition-opacity disabled:opacity-50
-          "
+          style={{
+            height: 48, padding: "0 18px", flexShrink: 0,
+            background: "var(--ink)", color: "#fff",
+            border: "none", borderRadius: 12, cursor: "pointer",
+            fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14,
+            whiteSpace: "nowrap",
+            opacity: uiState === "loading" || !email.trim() ? 0.5 : 1,
+            transition: "opacity var(--dur) var(--ease)",
+          }}
         >
           {uiState === "loading" ? "…" : "Notify me"}
         </button>
       </form>
 
-      {/* Error message */}
+      {/* error */}
       {uiState === "error" && errorMsg && (
-        <p className="font-dm-sans text-[12px] text-[#DC2626] text-center">
+        <p style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--danger-ink)", textAlign: "center", marginTop: 8 }}>
           {errorMsg}
         </p>
       )}
 
-      {/* No thanks */}
-      <button
-        onClick={() => setDismissed(true)}
-        className="
-          font-dm-sans text-[12px] text-[#888888]
-          underline underline-offset-2
-          bg-transparent mt-0.5
-        "
-      >
-        No thanks
-      </button>
+      {/* no thanks */}
+      <p style={{ textAlign: "center", marginTop: 12 }}>
+        <button
+          onClick={() => setDismissed(true)}
+          style={{
+            background: "none", border: "none", cursor: "pointer", padding: 0,
+            fontFamily: "var(--font-body)", fontWeight: 400, fontSize: 13,
+            color: "var(--ink-3)",
+          }}
+        >
+          No thanks
+        </button>
+      </p>
     </div>
   );
 }

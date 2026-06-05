@@ -3,144 +3,171 @@
 import { useState, useRef, useEffect } from "react";
 import { TEAMS } from "@/lib/teams";
 
-// Five teams shown as quick-pick pills below the search input. Chosen because
-// they are the most-searched nations and give the picker immediate utility
-// without typing.
 const POPULAR_TEAM_NAMES = ["England", "Brazil", "Argentina", "France", "USA"];
 const popularTeams = TEAMS.filter((t) => POPULAR_TEAM_NAMES.includes(t.name));
 
-type Props = {
-  onTeamSelect: (teamName: string) => void;
-};
+type Props = { onTeamSelect: (teamName: string) => void };
 
 export default function TeamPicker({ onTeamSelect }: Props) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [query,   setQuery]   = useState("");
+  const [focused, setFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click — standard pattern for accessible comboboxes.
+  // Close dropdown on outside click.
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setFocused(false);
       }
     }
     document.addEventListener("mousedown", onMouseDown);
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, []);
 
-  const trimmed = query.trim();
+  const trimmed = query.trim().toLowerCase();
   const results = trimmed
-    ? TEAMS.filter((t) =>
-        t.name.toLowerCase().includes(trimmed.toLowerCase()),
-      ).slice(0, 6)
+    ? TEAMS.filter((t) => t.name.toLowerCase().includes(trimmed)).slice(0, 6)
     : [];
+  const showDrop = focused && results.length > 0;
 
   function handleSelect(name: string) {
     onTeamSelect(name);
     setQuery("");
-    setOpen(false);
+    setFocused(false);
   }
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef}>
 
       {/* ── Search input ── */}
-      <div className="relative" style={{ height: 56 }}>
-        {/* Magnifier icon */}
-        <svg
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      <div style={{ position: "relative", height: 56 }}>
+        {/* search icon */}
+        <span
+          style={{
+            position: "absolute", left: 16, top: "50%",
+            transform: "translateY(-50%)",
+            color: "var(--ink-3)",
+            display: "flex",
+            pointerEvents: "none",
+          }}
           aria-hidden="true"
         >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
         <input
           type="text"
           role="combobox"
-          aria-expanded={open && results.length > 0}
+          aria-expanded={showDrop}
           aria-autocomplete="list"
           aria-label="Search for your team"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
+          onChange={(e) => { setQuery(e.target.value); setFocused(true); }}
+          onFocus={() => setFocused(true)}
           placeholder="Search your team…"
-          className="
-            w-full h-full pl-11 pr-4
-            font-dm-sans text-[15px] text-[#111111] placeholder:text-[#888888]
-            bg-white border-2 border-[#E0DEDA] rounded-[14px]
-            outline-none focus:border-[#111111]
-            transition-colors
-          "
+          style={{
+            width: "100%", height: "100%",
+            paddingLeft: 46, paddingRight: 16,
+            fontFamily: "var(--font-body)", fontSize: 16,
+            color: "var(--ink)",
+            background: "var(--surface)",
+            border: focused ? "2px solid var(--ink)" : "2px solid var(--line)",
+            borderRadius: "var(--r-input)",
+            outline: "none",
+            boxShadow: focused ? "0 0 0 4px var(--gold-soft)" : "none",
+            transition: "border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)",
+          }}
         />
       </div>
 
-      {/* ── Dropdown results ── */}
-      {open && results.length > 0 && (
+      {/* ── Dropdown ── */}
+      {showDrop && (
         <ul
           role="listbox"
-          className="
-            absolute left-0 right-0 top-[60px] z-10
-            bg-white border-2 border-[#E0DEDA] rounded-[14px]
-            overflow-hidden shadow-sm
-          "
+          style={{
+            position: "absolute",
+            left: 0, right: 0,
+            top: 62,
+            zIndex: 20,
+            margin: 0, padding: 6, listStyle: "none",
+            background: "var(--surface)",
+            border: "2px solid var(--line)",
+            borderRadius: "var(--r-input)",
+            boxShadow: "var(--shadow-pop)",
+            overflow: "hidden",
+          }}
         >
-          {results.map((team) => (
-            <li key={team.name} role="option" aria-selected={false}>
+          {results.map((t) => (
+            <li key={t.name} role="option" aria-selected={false}>
               <button
-                // onMouseDown fires before onBlur, keeping the input focused
-                // and preventing the outside-click handler from closing first.
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleSelect(team.name);
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(t.name); }}
+                style={{
+                  width: "100%",
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "11px 12px", textAlign: "left",
+                  background: "transparent", border: "none",
+                  borderRadius: 9, cursor: "pointer",
+                  fontFamily: "var(--font-body)", fontSize: 15,
+                  color: "var(--ink)",
+                  transition: "background var(--dur) var(--ease)",
                 }}
-                className="
-                  w-full flex items-center gap-3 px-4 py-3 text-left
-                  font-dm-sans text-[14px] text-[#111111]
-                  hover:bg-[#F5F4F0] transition-colors
-                "
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-2)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
               >
-                <span className="text-xl leading-none" aria-hidden="true">
-                  {team.flag}
+                <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden="true">{t.flag}</span>
+                <span style={{ flex: 1 }}>{t.name}</span>
+                <span style={{
+                  fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 11,
+                  letterSpacing: "0.03em", color: "var(--ink-3)",
+                }}>
+                  GROUP {t.group}
                 </span>
-                <span>{team.name}</span>
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      {/* ── Popular team pills ── */}
-      <div className="flex flex-wrap gap-2 mt-4">
-        {popularTeams.map((team) => (
+      {/* ── Popular pills ── */}
+      <p
+        className="uppercase tracking-[0.12em] font-semibold font-body"
+        style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 28, marginBottom: 12 }}
+      >
+        Most followed
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {popularTeams.map((t) => (
           <button
-            key={team.name}
-            onClick={() => handleSelect(team.name)}
-            className="
-              flex items-center gap-1.5 px-3 py-1.5
-              bg-white border border-[#E0DEDA] rounded-full
-              font-dm-sans text-[13px] text-[#444444]
-              hover:border-[#111111] hover:text-[#111111]
-              transition-colors
-            "
+            key={t.name}
+            onClick={() => handleSelect(t.name)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "9px 14px",
+              background: "var(--surface)",
+              border: "1.5px solid var(--line)",
+              borderRadius: "var(--r-pill)",
+              fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14,
+              color: "var(--ink-2)",
+              cursor: "pointer",
+              transition: "all var(--dur) var(--ease)",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.borderColor = "var(--ink)";
+              el.style.color = "var(--ink)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.borderColor = "var(--line)";
+              el.style.color = "var(--ink-2)";
+            }}
           >
-            <span aria-hidden="true">{team.flag}</span>
-            <span>{team.name}</span>
+            <span style={{ fontSize: 17, lineHeight: 1 }} aria-hidden="true">{t.flag}</span>
+            <span>{t.name}</span>
           </button>
         ))}
       </div>

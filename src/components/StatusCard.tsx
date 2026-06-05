@@ -2,134 +2,281 @@
 
 import type { TeamStatus } from "@/lib/qualification";
 
-// All class strings are spelled out in full so Tailwind's static scanner
-// includes every arbitrary-value class in the build. Dynamic interpolation
-// like `bg-[${color}]` would be purged.
-const STATE_CONFIG = {
-  THROUGH: {
-    icon: "✅",
-    label: "THROUGH",
-    cardBg: "bg-[#DCFCE7]",
-    borderColor: "border-[#BBF7D0]",
-    textColor: "text-[#16A34A]",
-    hexColor: "#16A34A",
-  },
-  HANGING_ON: {
-    icon: "⚠️",
-    label: "HANGING ON",
-    cardBg: "bg-[#FEF3C7]",
-    borderColor: "border-[#FDE68A]",
-    textColor: "text-[#D97706]",
-    hexColor: "#D97706",
-  },
-  IN_DANGER: {
-    icon: "🔴",
-    label: "IN DANGER",
-    cardBg: "bg-[#FEE2E2]",
-    borderColor: "border-[#FECACA]",
-    textColor: "text-[#DC2626]",
-    hexColor: "#DC2626",
-  },
-  OUT: {
-    icon: "❌",
-    label: "OUT",
-    cardBg: "bg-[#F3F4F6]",
-    borderColor: "border-[#E5E7EB]",
-    textColor: "text-[#6B7280]",
-    hexColor: "#6B7280",
-  },
-} as const;
-
-type Props = {
-  status: TeamStatus;
+// ── Canonical fills (per the approved design system) ────────────────────────
+const FILLS: Record<TeamStatus["status"], string> = {
+  THROUGH:    "#14532D",
+  HANGING_ON: "#92400E",
+  IN_DANGER:  "#7F1D1D",
+  OUT:        "#1F2937",
 };
 
+// Labels exactly as they appear on the scoreboard card.
+const LABELS: Record<TeamStatus["status"], string> = {
+  THROUGH:    "THROUGH",
+  HANGING_ON: "HANGING ON",
+  IN_DANGER:  "IN DANGER",
+  OUT:        "OUT",
+};
+
+// ── Live pill ────────────────────────────────────────────────────────────────
+// Shown only on HANGING ON / IN DANGER to signal the data is live-updated.
+// Two-layer dot: outer ring expands and fades (live-ring); inner dot pulses
+// (live-dot). Both driven by CSS keyframes in globals.css.
+function LivePill() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        padding: "5px 10px 5px 9px",
+        borderRadius: "var(--r-pill)",
+        background: "rgba(0,0,0,0.22)",
+        border: "1px solid rgba(255,255,255,0.18)",
+      }}
+    >
+      <span style={{ position: "relative", width: 8, height: 8, display: "inline-flex" }}>
+        {/* expanding ring */}
+        <span
+          className="live-ring"
+          style={{
+            position: "absolute", inset: 0,
+            borderRadius: "50%",
+            background: "var(--on-fill)",
+          }}
+        />
+        {/* solid inner dot */}
+        <span
+          className="live-dot"
+          style={{
+            position: "relative", width: 8, height: 8,
+            borderRadius: "50%",
+            background: "var(--on-fill)",
+          }}
+        />
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-body)",
+          fontWeight: 500, fontSize: 10.5,
+          letterSpacing: "0.18em",
+          color: "var(--on-fill)",
+        }}
+      >
+        LIVE
+      </span>
+    </span>
+  );
+}
+
+// ── Qualify meter ────────────────────────────────────────────────────────────
+// 12 horizontal cells representing the 12 third-placed teams. Shown only when
+// the team has a cross-group rank (HANGING_ON / IN_DANGER). Gold pip marks the
+// team's current rank; white cut-line after cell 8 is the qualification boundary.
+function QualifyMeter({ rank }: { rank: number }) {
+  function suffix(n: number): string {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] ?? s[v] ?? s[0];
+  }
+
+  return (
+    <div style={{ width: "100%", marginTop: 18 }}>
+      {/* cells */}
+      <div style={{ display: "flex", gap: 3, marginBottom: 9 }}>
+        {Array.from({ length: 12 }).map((_, i) => {
+          const n = i + 1;
+          const isTeam = n === rank;
+          const inZone = n <= 8;
+          return (
+            <div key={n} style={{ flex: 1, position: "relative" }}>
+              <div
+                style={{
+                  height: 8,
+                  borderRadius: 2,
+                  background: isTeam
+                    ? "var(--gold)"
+                    : inZone
+                    ? "rgba(255,255,255,0.34)"
+                    : "rgba(255,255,255,0.13)",
+                  boxShadow: isTeam ? "0 0 0 2px rgba(0,0,0,0.18)" : "none",
+                }}
+              />
+              {/* white cut-line at the 8/12 boundary */}
+              {n === 8 && (
+                <span
+                  style={{
+                    position: "absolute", right: -3,
+                    top: -4, bottom: -4,
+                    width: 2, background: "rgba(255,255,255,0.92)",
+                    borderRadius: 2,
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {/* labels */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-body)", fontSize: 10.5,
+            letterSpacing: "0.04em", color: "var(--on-fill)",
+          }}
+        >
+          {rank}{suffix(rank)} of 12 third-placed
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-body)", fontSize: 10.5,
+            letterSpacing: "0.04em", color: "var(--on-fill-dim)",
+          }}
+        >
+          top 8 qualify
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── StatusCard ───────────────────────────────────────────────────────────────
+type Props = { status: TeamStatus };
+
 export default function StatusCard({ status }: Props) {
-  const cfg = STATE_CONFIG[status.status];
-  const showLiveDot =
-    status.status === "HANGING_ON" || status.status === "IN_DANGER";
+  // The pre-tournament sentinel: HANGING_ON with no matches played yet.
+  // Reuses the HANGING_ON card fill but suppresses live pulse and qualify meter.
+  const isPreTournament =
+    status.status === "HANGING_ON" &&
+    status.message === "Tournament hasn't started yet";
+
+  // Pre-tournament uses a dark neutral fill (#1C1917) with a solid gold border
+  // rather than the amber HANGING_ON fill, so it reads as "waiting" not "warning".
+  const fill   = isPreTournament ? "#1C1917" : FILLS[status.status];
+  const border = isPreTournament
+    ? "1px solid var(--gold)"
+    : "1px solid rgba(201,168,76,0.4)";
+  const label = LABELS[status.status];
+  // Multi-word labels (HANGING ON, IN DANGER) split across two lines; single-
+  // word labels (THROUGH, OUT) render on one. Multi-word uses a smaller size so
+  // the two-line block stays proportional — mirroring the reference StatusCard.jsx.
+  const labelWords   = label.split(" ");
+  const isMultiWord  = labelWords.length > 1;
+  const labelSize    = isMultiWord ? 60 : 74;
+  const showLive     = !isPreTournament && (status.status === "HANGING_ON" || status.status === "IN_DANGER");
+  const showMeter    = !isPreTournament && status.thirdPlaceRank !== null;
 
   return (
     <div
-      className={`
-        w-full max-w-[380px] mx-auto
-        ${cfg.cardBg} ${cfg.borderColor}
-        border-2 rounded-[20px]
-        px-7 py-8
-        flex flex-col items-center gap-3
-      `}
+      style={{
+        borderRadius: "var(--r-card)",
+        border,
+        boxShadow: "var(--shadow-hero)",
+        background: fill,
+        padding: "20px 22px 32px",
+        position: "relative",
+        overflow: "hidden",
+      }}
     >
-      {/* ── Flag ── */}
-      <span
-        className="leading-none select-none"
-        style={{ fontSize: 44 }}
-        aria-label={status.team}
-      >
-        {status.flag}
-      </span>
+      {/* Depth gradient — transparent → dark at foot, makes on-fill type pop */}
+      <div
+        style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          background: "linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.20) 100%)",
+        }}
+      />
 
-      {/* ── Team name ── */}
-      <p
-        className="
-          font-syne font-bold text-[13px] uppercase tracking-[0.1em]
-          text-[#888888] text-center
-        "
-      >
-        {status.team}
-      </p>
-
-      {/* ── Status icon + label ── */}
-      <div className="flex flex-col items-center gap-1.5 mt-1">
+      {/* ── Top row: group context + live pill ── */}
+      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span
-          className="leading-none select-none"
-          style={{ fontSize: 36 }}
-          aria-hidden="true"
+          style={{
+            fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 11,
+            letterSpacing: "0.12em", textTransform: "uppercase",
+            color: "var(--on-fill-dim)",
+          }}
         >
-          {cfg.icon}
+          {status.group} · {status.matchesPlayed} PLAYED
         </span>
-        <p
-          className={`font-syne font-[800] text-[26px] leading-none tracking-[-0.02em] ${cfg.textColor}`}
+        {showLive && <LivePill />}
+      </div>
+
+      {/* ── Flag + team name ── */}
+      <div
+        style={{
+          position: "relative", marginTop: 18,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 64, lineHeight: 1,
+            filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.30))",
+          }}
+          aria-label={status.team}
         >
-          {cfg.label}
-        </p>
+          {status.flag}
+        </span>
+
+        <span
+          style={{
+            fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 12.5,
+            letterSpacing: "0.22em", textTransform: "uppercase",
+            color: "var(--on-fill)",
+          }}
+        >
+          {status.team}
+        </span>
+      </div>
+
+      {/* ── Status label — the dominant element on screen ── */}
+      <div style={{ position: "relative", marginTop: 14, textAlign: "center" }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 900,
+            textTransform: "uppercase",
+            fontSize: labelSize,
+            lineHeight: 0.82,
+            letterSpacing: "-0.02em",
+            color: "var(--on-fill)",
+            textShadow: "0 2px 0 rgba(0,0,0,0.12)",
+            margin: 0,
+          }}
+        >
+          {isMultiWord
+            ? labelWords.map((w, i) => <div key={i}>{w}</div>)
+            : label}
+        </h2>
       </div>
 
       {/* ── Message ── */}
-      <p className="font-dm-sans text-[15px] text-[#111111] text-center font-medium mt-1">
+      <p
+        style={{
+          position: "relative", marginTop: 18, textAlign: "center",
+          fontFamily: "var(--font-body)", fontWeight: 500,
+          fontSize: 15.5, lineHeight: 1.4,
+          color: "var(--on-fill)",
+        }}
+      >
         {status.message}
       </p>
 
-      {/* ── Detail ── */}
-      {status.detail && (
-        <p className="font-dm-sans text-[13px] text-[#444444] text-center">
+      {/* ── Qualify meter (3rd-place) or detail line ── */}
+      {showMeter && status.thirdPlaceRank !== null ? (
+        <QualifyMeter rank={status.thirdPlaceRank} />
+      ) : (
+        <p
+          style={{
+            position: "relative", marginTop: 12, textAlign: "center",
+            fontFamily: "var(--font-body)", fontSize: 11,
+            letterSpacing: "0.04em",
+            color: "var(--on-fill-dim)",
+          }}
+        >
           {status.detail}
         </p>
       )}
-
-      {/* ── Live dot + timestamp row ── */}
-      <div className="flex items-center justify-center gap-3 mt-2">
-        {showLiveDot && (
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-2 h-2 rounded-full bg-[#16A34A] animate-live-pulse"
-              aria-hidden="true"
-            />
-            <span className="font-dm-mono text-[11px] text-[#16A34A] font-medium">
-              Live
-            </span>
-          </span>
-        )}
-        {/* TeamStatus has no real timestamp yet — show "Live data" as a placeholder
-            until a fetchedAt field is added in a future build step. */}
-        <span className="font-dm-mono text-[10px] text-[#888888]">
-          Live data
-        </span>
-      </div>
-
-      {/* ── Group position context ── */}
-      <p className="font-dm-mono text-[11px] text-[#888888] text-center">
-        {`Group ${status.group} · ${status.matchesPlayed} match${status.matchesPlayed === 1 ? "" : "es"} played`}
-      </p>
     </div>
   );
 }

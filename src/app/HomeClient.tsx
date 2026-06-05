@@ -1,12 +1,9 @@
 "use client";
 
-// HomeClient owns all the interactive state for the single-page app.
-// It is imported by the server component page.tsx, which has no runtime JS
-// of its own — this is where all client behaviour lives.
-
 import { useState, useEffect } from "react";
 import type { TeamStatus } from "@/lib/qualification";
 import TeamPicker from "@/components/TeamPicker";
+import { getTeamByName } from "@/lib/teams";
 import StatusCard from "@/components/StatusCard";
 import ShareButton from "@/components/ShareButton";
 import NotifyCapture from "@/components/NotifyCapture";
@@ -14,14 +11,34 @@ import ExplainButton from "@/components/ExplainButton";
 
 type FetchState = "idle" | "loading" | "success" | "stale" | "error";
 
+// The "still in?" wordmark: DM Mono 500, gold, always lowercase.
+// The "?" gets gold-deep to create a subtle two-tone effect (per Wordmark.jsx).
+function Wordmark() {
+  return (
+    <span
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontWeight: 500,
+        fontSize: 19,
+        letterSpacing: "-0.01em",
+        lineHeight: 1,
+        color: "var(--gold)",
+        userSelect: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      still in<span style={{ color: "var(--gold-deep)" }}>?</span>
+    </span>
+  );
+}
+
 export default function HomeClient() {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-  const [teamStatus, setTeamStatus] = useState<TeamStatus | null>(null);
-  const [fetchState, setFetchState] = useState<FetchState>("idle");
+  const [teamStatus, setTeamStatus]     = useState<TeamStatus | null>(null);
+  const [fetchState, setFetchState]     = useState<FetchState>("idle");
 
-  // Fetch from /api/status whenever selectedTeam changes. The route reads from
-  // the standings_cache table — it never calls BallDontLie directly — so this
-  // is fast and safe to call on every team selection.
+  // Fetch /api/status whenever selectedTeam changes. The route reads from
+  // standings_cache — it never hits the football-data.org API directly.
   useEffect(() => {
     if (!selectedTeam) return;
 
@@ -33,23 +50,13 @@ export default function HomeClient() {
       signal: controller.signal,
     })
       .then(async (res) => {
-        // 503 means the cron job hasn't populated the cache yet — tell the
-        // user to check back rather than showing a cryptic error.
-        if (res.status === 503) {
-          setFetchState("stale");
-          return;
-        }
-        if (!res.ok) {
-          setFetchState("error");
-          return;
-        }
+        if (res.status === 503) { setFetchState("stale");   return; }
+        if (!res.ok)            { setFetchState("error");   return; }
         const data = (await res.json()) as TeamStatus;
         setTeamStatus(data);
         setFetchState("success");
       })
       .catch((err: unknown) => {
-        // AbortError is expected when the component unmounts or selectedTeam
-        // changes before the previous fetch completes — not a real error.
         if (err instanceof Error && err.name === "AbortError") return;
         setFetchState("error");
       });
@@ -69,118 +76,224 @@ export default function HomeClient() {
     setFetchState("idle");
   }
 
-  return (
-    // Outer wrapper: full-height page with #F5F4F0 background (set on <html>
-    // in layout.tsx) and centred column at max-width 480px.
-    <div className="relative min-h-screen flex flex-col">
+  // ── Screen 1 — Search ────────────────────────────────────────────────────
+  if (!selectedTeam) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <div className="flex-1 flex flex-col w-full max-w-[390px] mx-auto px-5">
 
-      {/* ── Wordmark — fixed top-left, outside the centred column ── */}
-      <div className="fixed top-0 left-0 pt-5 pl-5 z-10 pointer-events-none">
-        <span className="font-dm-mono font-medium text-[13px] text-[#888888]">
-          still in?
-        </span>
-      </div>
+          {/* chrome row — wordmark */}
+          <div className="flex items-center h-16">
+            <Wordmark />
+          </div>
 
-      {/* ── Centred content column ── */}
-      <main
-        className="
-          flex-1 flex flex-col items-center justify-center
-          w-full max-w-[480px] mx-auto
-          px-5
-          pt-16 pb-12
-        "
-      >
-        {/* ── Picker view: no team selected ── */}
-        {!selectedTeam && (
-          <div className="w-full flex flex-col">
-            <h1
-              className="
-                font-syne font-[800] tracking-[-0.02em] text-[#111111]
-                text-[28px] sm:text-[32px]
-                mb-1.5
-              "
+          {/* heading block */}
+          <div style={{ marginTop: 40 }}>
+            <p
+              className="uppercase tracking-[0.12em] text-[11px] font-semibold font-body"
+              style={{ color: "var(--ink-3)", marginBottom: 16 }}
             >
-              Which team are you following?
-            </h1>
-            <p className="font-dm-sans text-[13px] text-[#888888] mb-6">
-              Find out if they&apos;re still in the World Cup — right now.
+              World Cup 2026 · Live
             </p>
+            <h1
+              style={{
+                fontFamily: "var(--font-body)",
+                fontWeight: 600,
+                fontSize: 38,
+                lineHeight: 1.0,
+                letterSpacing: "-0.025em",
+                color: "var(--ink)",
+              }}
+            >
+              Which team<br />are you<br />following?
+            </h1>
+            <p
+              style={{
+                marginTop: 14,
+                fontFamily: "var(--font-body)",
+                fontWeight: 400,
+                fontStyle: "italic",
+                fontSize: 15,
+                lineHeight: 1.4,
+                color: "var(--ink-3)",
+              }}
+            >
+              For people who are half-watching.
+            </p>
+          </div>
+
+          {/* search + dropdown */}
+          <div style={{ marginTop: 28 }}>
             <TeamPicker onTeamSelect={handleTeamSelect} />
           </div>
+
+          {/* spacer pushes footer down */}
+          <div className="flex-1" />
+
+          {/* footer */}
+          <p
+            className="text-center py-6"
+            style={{
+              fontFamily: "var(--font-body)", fontWeight: 500,
+              fontSize: 11, letterSpacing: "0.03em", color: "var(--ink-3)",
+            }}
+          >
+            48 teams · 12 groups · updated live every 60s
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Loading screen — shown between team selection and first result ────────
+  // Full-screen centred: flag + team name + animated progress bar.
+  // Intentionally replaces the status screen entirely so there's no flash of
+  // empty chrome while the /api/status fetch is in flight.
+  if (fetchState === "loading") {
+    const team = getTeamByName(selectedTeam);
+    return (
+      <div
+        className="min-h-screen bg-white flex flex-col items-center justify-center gap-4"
+      >
+        {/* flag */}
+        <span style={{ fontSize: 64, lineHeight: 1 }} aria-hidden="true">
+          {team?.flag ?? ""}
+        </span>
+
+        {/* team name */}
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontWeight: 600,
+            fontSize: 12,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "#525252",
+          }}
+        >
+          {selectedTeam}
+        </p>
+
+        {/* animated progress bar */}
+        <div
+          style={{
+            width: 200, height: 3,
+            background: "#E7E5E0",
+            borderRadius: 99,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: "40%", height: "100%",
+              background: "#C9A84C",
+              borderRadius: 99,
+              animation: "progress-slide 1.4s ease-in-out infinite",
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Screen 2 — Status ────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <div className="flex-1 flex flex-col w-full max-w-[390px] mx-auto px-5">
+
+        {/* chrome row — back link + wordmark */}
+        <div
+          className="flex items-center justify-between"
+          style={{ height: 64 }}
+        >
+          <button
+            onClick={handleReset}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 13,
+              color: "var(--ink-3)",
+              background: "none", border: "none", cursor: "pointer",
+              padding: 0, marginLeft: -2,
+            }}
+          >
+            {/* arrow-left icon — Lucide style */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Change team
+          </button>
+          <Wordmark />
+        </div>
+
+        {/* stale cache */}
+        {fetchState === "stale" && (
+          <p
+            className="text-center py-12"
+            style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--ink-3)" }}
+          >
+            Data loading — check back in a moment.
+          </p>
         )}
 
-        {/* ── Status view: team selected ── */}
-        {selectedTeam && (
-          <div className="w-full flex flex-col items-center">
+        {/* error */}
+        {fetchState === "error" && (
+          <p
+            className="text-center py-12"
+            style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--danger-ink)" }}
+          >
+            Couldn&apos;t load status — please try again.
+          </p>
+        )}
 
-            {/* Back link */}
-            <button
-              onClick={handleReset}
-              className="
-                self-start mb-5
-                font-dm-sans text-[13px] text-[#888888]
-                hover:text-[#111111] transition-colors
-              "
-            >
-              ← Change team
-            </button>
+        {/* ── success ── */}
+        {fetchState === "success" && teamStatus && (
+          <>
+            {/* hero card */}
+            <div style={{ marginTop: 8 }}>
+              <StatusCard status={teamStatus} />
+            </div>
 
-            {/* Loading */}
-            {fetchState === "loading" && (
-              <p className="font-dm-sans text-[14px] text-[#888888] text-center py-8">
-                Loading…
-              </p>
-            )}
+            {/* share button */}
+            <div style={{ marginTop: 16 }}>
+              <ShareButton teamName={teamStatus.team} status={teamStatus.status} />
+            </div>
 
-            {/* Cache not populated yet */}
-            {fetchState === "stale" && (
-              <p className="font-dm-sans text-[14px] text-[#888888] text-center py-8">
-                Data loading, check back in a moment.
-              </p>
-            )}
+            {/* AI explain */}
+            <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
+              <ExplainButton
+                teamName={teamStatus.team}
+                status={teamStatus.status}
+                detail={teamStatus.detail}
+              />
+            </div>
 
-            {/* Unexpected error */}
-            {fetchState === "error" && (
-              <p className="font-dm-sans text-[14px] text-[#DC2626] text-center py-8">
-                Couldn&apos;t load status — please try again.
-              </p>
-            )}
-
-            {/* Success: status card + action components */}
-            {fetchState === "success" && teamStatus && (
-              <div className="w-full flex flex-col items-center">
-
-                {/* StatusCard */}
-                <StatusCard status={teamStatus} />
-
-                {/* Gap: card → buttons = 20px */}
-                <div className="mt-5 w-full flex flex-col" style={{ gap: 16 }}>
-
-                  {/* ExplainButton sits closest to the card — it explains the status */}
-                  <ExplainButton
-                    teamName={teamStatus.team}
-                    status={teamStatus.status}
-                    detail={teamStatus.detail}
-                  />
-
-                  {/* ShareButton */}
-                  <ShareButton
-                    teamName={teamStatus.team}
-                    status={teamStatus.status}
-                  />
-
-                  {/* Gap: buttons → email = 16px (already set by the parent gap) */}
-                  {/* NotifyCapture — only relevant for uncertain states */}
-                  {(teamStatus.status === "HANGING_ON" ||
-                    teamStatus.status === "IN_DANGER") && (
-                    <NotifyCapture teamName={teamStatus.team} />
-                  )}
-                </div>
+            {/* notify — only for uncertain states */}
+            {(teamStatus.status === "HANGING_ON" || teamStatus.status === "IN_DANGER") && (
+              <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+                <NotifyCapture teamName={teamStatus.team} />
               </div>
             )}
-          </div>
+
+            {/* spacer */}
+            <div className="flex-1" style={{ minHeight: 16 }} />
+
+            {/* footer */}
+            <p
+              className="text-center"
+              style={{
+                fontFamily: "var(--font-body)", fontWeight: 500,
+                fontSize: 11, letterSpacing: "0.03em", color: "var(--ink-3)",
+                padding: "16px 0 20px",
+              }}
+            >
+              stillin.app · for people who are half-watching
+            </p>
+          </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

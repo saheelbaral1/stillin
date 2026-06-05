@@ -1,0 +1,162 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "ui_kits/stillin/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Saira Condensed|DM Sans|DM Mono))/i]",
+        "message": "Font not provided by the design system. Available: Saira Condensed, DM Sans, DM Mono."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {},
+    "tokens": [
+      "--ai-grad",
+      "--app-width",
+      "--bg",
+      "--danger-fill",
+      "--danger-fill-2",
+      "--danger-ink",
+      "--danger-tint",
+      "--danger-tint-line",
+      "--dur",
+      "--ease",
+      "--font-body",
+      "--font-display",
+      "--font-mono",
+      "--gold",
+      "--gold-deep",
+      "--gold-soft",
+      "--hanging-fill",
+      "--hanging-fill-2",
+      "--hanging-ink",
+      "--hanging-tint",
+      "--hanging-tint-line",
+      "--ink",
+      "--ink-2",
+      "--ink-3",
+      "--line",
+      "--line-strong",
+      "--on-fill",
+      "--on-fill-dim",
+      "--on-fill-faint",
+      "--out-fill",
+      "--out-fill-2",
+      "--out-ink",
+      "--out-tint",
+      "--out-tint-line",
+      "--pad-x",
+      "--r-btn",
+      "--r-card",
+      "--r-input",
+      "--r-pill",
+      "--shadow-card",
+      "--shadow-hero",
+      "--shadow-pop",
+      "--surface",
+      "--surface-2",
+      "--through-fill",
+      "--through-fill-2",
+      "--through-ink",
+      "--through-tint",
+      "--through-tint-line"
+    ],
+    "tokenKinds": {
+      "--gold": "color",
+      "--gold-deep": "color",
+      "--gold-soft": "color",
+      "--bg": "color",
+      "--surface": "color",
+      "--surface-2": "color",
+      "--ink": "color",
+      "--ink-2": "color",
+      "--ink-3": "color",
+      "--line": "color",
+      "--line-strong": "color",
+      "--through-fill": "color",
+      "--through-fill-2": "color",
+      "--through-ink": "color",
+      "--through-tint": "color",
+      "--through-tint-line": "color",
+      "--hanging-fill": "color",
+      "--hanging-fill-2": "color",
+      "--hanging-ink": "color",
+      "--hanging-tint": "color",
+      "--hanging-tint-line": "color",
+      "--danger-fill": "color",
+      "--danger-fill-2": "color",
+      "--danger-ink": "color",
+      "--danger-tint": "color",
+      "--danger-tint-line": "color",
+      "--out-fill": "color",
+      "--out-fill-2": "color",
+      "--out-ink": "color",
+      "--out-tint": "color",
+      "--out-tint-line": "color",
+      "--on-fill": "color",
+      "--on-fill-dim": "color",
+      "--on-fill-faint": "color",
+      "--font-display": "font",
+      "--font-body": "font",
+      "--font-mono": "font",
+      "--ai-grad": "other",
+      "--r-card": "spacing",
+      "--r-input": "spacing",
+      "--r-btn": "spacing",
+      "--r-pill": "spacing",
+      "--shadow-card": "shadow",
+      "--shadow-hero": "shadow",
+      "--shadow-pop": "shadow",
+      "--app-width": "spacing",
+      "--pad-x": "spacing",
+      "--ease": "other",
+      "--dur": "other"
+    },
+    "fontFamilies": [
+      "DM Mono",
+      "DM Sans",
+      "Saira Condensed"
+    ]
+  }
+}

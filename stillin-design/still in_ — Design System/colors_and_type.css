@@ -1,0 +1,198 @@
+/* ============================================================================
+   still in? — Design System · colors_and_type.css
+   FIFA World Cup 2026 qualification tracker.
+   Light theme. Stadium-scoreboard energy. One screen, one answer.
+
+   Load order in any HTML file:
+     <link rel="stylesheet" href="colors_and_type.css">
+   Fonts are served from Google Fonts (see @import below). If you need an
+   offline / self-hosted build, swap the @import for local @font-face rules
+   pointing at fonts/ — the family names used downstream stay the same.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ---- Brand ---------------------------------------------------------- */
+  --gold:        #C9A84C;  /* wordmark + primary interactive accent       */
+  --gold-deep:   #A8842F;  /* gold text on white / hover                  */
+  --gold-soft:   #F4ECCF;  /* gold tint surfaces (focus ring fill, chips) */
+
+  /* ---- Neutrals (light theme) ---------------------------------------- */
+  --bg:          #FFFFFF;  /* page background                             */
+  --surface:     #FFFFFF;  /* cards / inputs                              */
+  --surface-2:   #FAFAF8;  /* subtle raised / hovered surface            */
+  --ink:         #0A0A0A;  /* primary near-black type                     */
+  --ink-2:       #525252;  /* secondary type                             */
+  --ink-3:       #8A8A8A;  /* muted type, timestamps, placeholders        */
+  --line:        #E7E5E0;  /* hairline borders, dividers                  */
+  --line-strong: #0A0A0A;  /* focused input border                        */
+
+  /* ---- Status system — the four states ------------------------------- */
+  /* Each state ships a saturated "ink" (the scoreboard label colour),
+     a bold fill (for the hero status card), a pale tint + tint border
+     (for compact list / inline treatments), and on-fill text colours.   */
+
+  /* The four states ship a confident solid FILL (a white label sits on it — the
+     fill is the whole statement), a deep INK for status text / verdicts on
+     white, and a pale TINT + strong border line for compact inline chips.
+     Tuned to the Premier League / UEFA match-state feel: medium-saturation and
+     decisive, never aggressive, never pastel. */
+
+  /* THROUGH — confirmed, qualified · lands like a goal just went in */
+  --through-fill:       #14532D;
+  --through-fill-2:     #103D21;
+  --through-ink:        #15803D;
+  --through-tint:       #F0FFF4;
+  --through-tint-line:  #16A34A;
+
+  /* HANGING ON — 3rd, inside the cross-group top 8 · deep honey, tense */
+  --hanging-fill:       #92400E;
+  --hanging-fill-2:     #7A360B;
+  --hanging-ink:        #92400E;
+  --hanging-tint:       #FFFBEB;
+  --hanging-tint-line:  #D97706;
+
+  /* IN DANGER — 3rd, outside the top 8 · serious, not bright */
+  --danger-fill:        #7F1D1D;
+  --danger-fill-2:      #671717;
+  --danger-ink:         #991B1B;
+  --danger-tint:        #FFF5F5;
+  --danger-tint-line:   #DC2626;
+
+  /* OUT — eliminated · quiet and final */
+  --out-fill:           #1F2937;
+  --out-fill-2:         #161D26;
+  --out-ink:            #374151;
+  --out-tint:           #F9F9F9;
+  --out-tint-line:      #E7E5E0;
+
+  /* On-fill text (used on any saturated status fill) */
+  --on-fill:            #FFFFFF;
+  --on-fill-dim:        rgba(255, 255, 255, 0.72);
+  --on-fill-faint:      rgba(255, 255, 255, 0.42);
+
+  /* ---- Type families -------------------------------------------------- */
+  /* THE TYPE SYSTEM — three voices, strictly separated:
+     · display = one brutal condensed face, reserved for STATUS LABELS ONLY
+     · body    = a clean modern sans for EVERYTHING else (headings, labels,
+                 kickers, meta, prose) — Sky Sports / BBC Sport data-label feel
+     · mono    = DM Mono, used for the "still in?" wordmark and NOTHING else  */
+  --font-display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif; /* STATUS LABELS only */
+  --font-body:    'DM Sans', system-ui, -apple-system, sans-serif;          /* everything else    */
+  --font-mono:    'DM Mono', ui-monospace, 'SFMono-Regular', monospace;     /* wordmark ONLY      */
+
+  /* ---- Brand AI gradient — gold→purple, the cue for AI-generated copy ---- */
+  --ai-grad: linear-gradient(90deg, #C9A84C 0%, #9B6FD4 100%);
+
+  /* ---- Radii ---------------------------------------------------------- */
+  --r-card:   12px;   /* tight scoreboard corners, decisive               */
+  --r-input:  14px;
+  --r-btn:    13px;
+  --r-pill:   999px;
+
+  /* ---- Elevation ------------------------------------------------------ */
+  --shadow-card:  0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-hero:  0 8px 40px rgba(0,0,0,0.12);
+  --shadow-pop:   0 8px 24px -8px rgba(10,10,10,0.20);
+
+  /* ---- Layout --------------------------------------------------------- */
+  --app-width: 390px;   /* mobile web app frame                           */
+  --pad-x:     20px;    /* page horizontal padding                        */
+
+  /* ---- Motion --------------------------------------------------------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur:  160ms;
+}
+
+/* ============================================================================
+   SEMANTIC TYPE TOKENS
+   Apply these classes directly, or copy the declarations into components.
+   ========================================================================== */
+
+/* Wordmark — always lowercase "still in?", mono, gold. */
+.t-wordmark {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--gold);
+  line-height: 1;
+}
+
+/* The scoreboard label — biggest element on the screen. */
+.t-scoreboard {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(64px, 22vw, 92px);
+  line-height: 0.84;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+/* Display heading — Screen 1 question, section titles. Clean modern sans,
+   semibold, tight tracking. Deliberately NOT the condensed face — it contrasts
+   against the status label rather than competing with it. */
+.t-display {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* Kicker / eyebrow — clean sans, uppercase, wide tracking. Team name, section
+   labels, data labels. Legible like a broadcast lower-third, never monospaced. */
+.t-kicker {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Lead body — status message, the human sentence under the label. */
+.t-lead {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+/* Body — supporting prose, detail lines. */
+.t-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* Meta — timestamps, group context, fine print. Clean sans, small. */
+.t-meta {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+}
+
+/* ============================================================================
+   LIVE PULSE — the heartbeat used on HANGING ON / IN DANGER status cards.
+   ========================================================================== */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1;    transform: scale(1);   }
+  50%      { opacity: 0.35; transform: scale(0.82); }
+}
+@keyframes live-ring {
+  0%   { opacity: 0.55; transform: scale(1);   }
+  70%  { opacity: 0;    transform: scale(2.6); }
+  100% { opacity: 0;    transform: scale(2.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="live"] { animation: none !important; }
+}

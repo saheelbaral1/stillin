@@ -1,30 +1,37 @@
 import type { Metadata } from "next";
-import { Syne, DM_Sans, DM_Mono } from "next/font/google";
+import { Saira_Condensed, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 
-// Google Fonts loaded via next/font — self-hosted, zero layout shift, no
-// external network request from the browser. Each font injects its CSS variable
-// onto the <html> element so Tailwind's font-syne / font-dm-sans / font-dm-mono
-// utilities (registered in globals.css @theme) resolve at runtime.
+/*
+  Three font families, strict role separation (per the approved design system):
+  · Saira Condensed 900 → status labels (THROUGH / HANGING ON / IN DANGER / OUT)
+  · DM Sans 400/500/600 → everything else (headings, labels, body, meta)
+  · DM Mono 500         → the "still in?" wordmark and NOTHING else
 
-const syne = Syne({
+  Each is loaded as a CSS variable so globals.css can register Tailwind
+  utilities and so components can reference var(--font-display) etc. in
+  inline styles where needed.
+*/
+
+const sairaCondensed = Saira_Condensed({
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-syne",
+  weight: ["900"],
+  variable: "--font-display",
   display: "swap",
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-dm-sans",
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-body",
   display: "swap",
 });
 
 const dmMono = DM_Mono({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-dm-mono",
+  weight: ["500"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -38,15 +45,12 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    // Background applied inline so it's guaranteed to override any UA stylesheet
-    // and is consistent with the Section 11 design token (#F5F4F0) without
-    // requiring a Tailwind arbitrary-value class that a purge could strip.
     <html
       lang="en"
-      className={`${syne.variable} ${dmSans.variable} ${dmMono.variable}`}
-      style={{ backgroundColor: "#F5F4F0" }}
+      className={`${sairaCondensed.variable} ${dmSans.variable} ${dmMono.variable}`}
+      style={{ backgroundColor: "#FFFFFF" }}
     >
-      <body className="min-h-screen font-dm-sans text-[#111111] antialiased">
+      <body className="min-h-screen font-body text-[#0A0A0A] antialiased">
         {children}
       </body>
     </html>
