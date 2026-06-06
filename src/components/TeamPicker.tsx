@@ -40,7 +40,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
     <div ref={containerRef}>
 
       {/* ── Search input ── */}
-      <div style={{ position: "relative", height: 56 }}>
+      <div className="relative w-full" style={{ height: 56 }}>
         {/* search icon */}
         <span
           style={{
@@ -82,55 +82,52 @@ export default function TeamPicker({ onTeamSelect }: Props) {
             transition: "border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)",
           }}
         />
-      </div>
 
-      {/* ── Dropdown ── */}
-      {showDrop && (
-        <ul
-          role="listbox"
-          style={{
-            position: "absolute",
-            left: 0, right: 0,
-            top: 62,
-            zIndex: 20,
-            margin: 0, padding: 6, listStyle: "none",
-            background: "var(--surface)",
-            border: "2px solid var(--line)",
-            borderRadius: "var(--r-input)",
-            boxShadow: "var(--shadow-pop)",
-            overflow: "hidden",
-          }}
-        >
-          {results.map((t) => (
-            <li key={t.name} role="option" aria-selected={false}>
-              <button
-                onMouseDown={(e) => { e.preventDefault(); handleSelect(t.name); }}
-                style={{
-                  width: "100%",
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "11px 12px", textAlign: "left",
-                  background: "transparent", border: "none",
-                  borderRadius: 9, cursor: "pointer",
-                  fontFamily: "var(--font-body)", fontSize: 15,
-                  color: "var(--ink)",
-                  transition: "background var(--dur) var(--ease)",
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-2)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-              >
-                <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden="true">{t.flag}</span>
-                <span style={{ flex: 1 }}>{t.name}</span>
-                <span style={{
-                  fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 11,
-                  letterSpacing: "0.03em", color: "var(--ink-3)",
-                }}>
-                  GROUP {t.group}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        {/* ── Dropdown ── */}
+        {showDrop && (
+          <ul
+            role="listbox"
+            className="absolute top-full left-0 right-0 z-50 mt-1"
+            style={{
+              padding: 6, listStyle: "none",
+              background: "var(--surface)",
+              border: "2px solid var(--line)",
+              borderRadius: "var(--r-input)",
+              boxShadow: "var(--shadow-pop)",
+              overflow: "hidden",
+            }}
+          >
+            {results.map((t) => (
+              <li key={t.name} role="option" aria-selected={false}>
+                <button
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(t.name); }}
+                  style={{
+                    width: "100%",
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "11px 12px", textAlign: "left",
+                    background: "transparent", border: "none",
+                    borderRadius: 9, cursor: "pointer",
+                    fontFamily: "var(--font-body)", fontSize: 15,
+                    color: "var(--ink)",
+                    transition: "background var(--dur) var(--ease)",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-2)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                >
+                  <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden="true">{t.flag}</span>
+                  <span style={{ flex: 1 }}>{t.name}</span>
+                  <span style={{
+                    fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 11,
+                    letterSpacing: "0.03em", color: "var(--ink-3)",
+                  }}>
+                    GROUP {t.group}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* ── Popular pills ── */}
       <p
