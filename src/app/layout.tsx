@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Saira_Condensed, DM_Sans, DM_Mono } from "next/font/google";
+import { Saira_Condensed, DM_Sans, DM_Mono, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 
 /*
@@ -32,6 +32,14 @@ const dmMono = DM_Mono({
   subsets: ["latin"],
   weight: ["500"],
   variable: "--font-mono",
+  display: "swap",
+});
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["900"],
+  style: ["italic"],
+  variable: "--font-kinetic",
   display: "swap",
 });
 
@@ -71,7 +79,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sairaCondensed.variable} ${dmSans.variable} ${dmMono.variable}`}
+      className={`${sairaCondensed.variable} ${dmSans.variable} ${dmMono.variable} ${barlowCondensed.variable}`}
     >
       {/*
         Inline script runs synchronously before the first paint so the saved

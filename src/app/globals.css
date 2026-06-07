@@ -10,6 +10,7 @@
   --font-display: var(--font-display); /* Saira Condensed 900 — status labels ONLY */
   --font-body:    var(--font-body);    /* DM Sans — everything else               */
   --font-mono:    var(--font-mono);    /* DM Mono — "still in?" wordmark ONLY     */
+  --font-kinetic: var(--font-kinetic); /* Barlow Condensed 900 Italic — kinetic heading */
 }
 
 /* ── Design tokens — light theme (default) ──────────────────────────────── */
@@ -91,6 +92,13 @@
   --toggle-bg:       #FFFFFF;
   --toggle-border:   #E7E5E0;
   --toggle-shadow:   0 1px 4px rgba(0,0,0,0.10);
+
+  /* Gold glow + glassmorphism tokens */
+  --gold-glow-ring:     0 0 0 3px rgba(201,168,76,0.18), 0 0 24px rgba(201,168,76,0.10);
+  --gold-glow-card:     0 0 0 1.5px rgba(201,168,76,0.60), 0 8px 32px rgba(201,168,76,0.16);
+  --glass-bg:           rgba(255,255,255,0.55);
+  --glass-border:       rgba(201,168,76,0.22);
+  --glass-border-focus: rgba(201,168,76,0.80);
 }
 
 /* ── Dark theme overrides ───────────────────────────────────────────────── */
@@ -136,6 +144,9 @@
   --toggle-bg:       #161616;
   --toggle-border:   #333333;
   --toggle-shadow:   none;
+
+  /* Glass bg override for dark theme */
+  --glass-bg: rgba(255,255,255,0.04);
 }
 
 /* ── Live heartbeat animations ──────────────────────────────────────────── */
@@ -164,3 +175,43 @@
 
 /* Search input placeholder — adapts to current theme via CSS var */
 .search-input::placeholder { color: var(--input-ph); }
+
+/* Kinetic background — diagonal stripe + radial gold spotlight */
+.kinetic-bg {
+  background-image:
+    repeating-linear-gradient(
+      -48deg,
+      transparent,
+      transparent 28px,
+      rgba(201,168,76,0.028) 28px,
+      rgba(201,168,76,0.028) 29px
+    ),
+    radial-gradient(
+      ellipse 90% 60% at 50% 110%,
+      rgba(201,168,76,0.07) 0%,
+      transparent 70%
+    );
+}
+[data-theme="light"] .kinetic-bg {
+  background-image:
+    repeating-linear-gradient(
+      -48deg,
+      transparent,
+      transparent 28px,
+      rgba(201,168,76,0.05) 28px,
+      rgba(201,168,76,0.05) 29px
+    ),
+    radial-gradient(
+      ellipse 90% 60% at 50% 110%,
+      rgba(201,168,76,0.10) 0%,
+      transparent 70%
+    );
+}
+
+/* Bento card — 3D tilt base; transform/box-shadow applied via JS on hover */
+.bento-card {
+  transform-style: preserve-3d;
+  transition: transform 180ms var(--ease), box-shadow 180ms var(--ease);
+  will-change: transform;
+  backface-visibility: hidden;
+}

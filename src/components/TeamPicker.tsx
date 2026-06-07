@@ -6,14 +6,105 @@ import { TEAMS } from "@/lib/teams";
 const POPULAR_TEAM_NAMES = ["England", "Brazil", "Argentina", "France", "USA"];
 const popularTeams = TEAMS.filter((t) => POPULAR_TEAM_NAMES.includes(t.name));
 
+const FLAG_CODES: Record<string, string> = {
+  England:   "gb-eng",
+  Brazil:    "br",
+  Argentina: "ar",
+  France:    "fr",
+  USA:       "us",
+};
+
 type Props = { onTeamSelect: (teamName: string) => void };
+
+function BentoCard({
+  team,
+  onSelect,
+  large = false,
+}: {
+  team: { name: string; flag: string };
+  onSelect: (name: string) => void;
+  large?: boolean;
+}) {
+  const code = FLAG_CODES[team.name];
+
+  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    el.style.transform = `perspective(500px) rotateX(${y * -10}deg) rotateY(${x * 10}deg) scale(1.04)`;
+    el.style.boxShadow = "var(--gold-glow-card)";
+  }
+
+  function handleMouseLeave(e: React.MouseEvent<HTMLButtonElement>) {
+    e.currentTarget.style.transform = "perspective(500px) rotateX(0deg) rotateY(0deg) scale(1)";
+    e.currentTarget.style.boxShadow = "none";
+  }
+
+  return (
+    <button
+      onClick={() => onSelect(team.name)}
+      className="bento-card"
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        justifyContent: "flex-end",
+        minHeight: large ? 160 : 90,
+        padding: "12px 14px",
+        background: "var(--pill-bg)",
+        border: "1.5px solid var(--pill-border)",
+        borderRadius: "var(--r-card)",
+        overflow: "hidden",
+        cursor: "pointer",
+        textAlign: "left",
+        width: "100%",
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {code && (
+        <img
+          src={`https://flagcdn.com/w80/${code}.png`}
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            width: large ? 72 : 48,
+            height: "auto",
+            opacity: 0.85,
+            borderRadius: 4,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      <span
+        style={{
+          position: "relative",
+          zIndex: 1,
+          fontFamily: "var(--font-body)",
+          fontWeight: 600,
+          fontSize: large ? 13 : 11,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--pill-text)",
+        }}
+      >
+        {team.name}
+      </span>
+    </button>
+  );
+}
 
 export default function TeamPicker({ onTeamSelect }: Props) {
   const [query,   setQuery]   = useState("");
   const [focused, setFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click.
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -36,12 +127,15 @@ export default function TeamPicker({ onTeamSelect }: Props) {
     setFocused(false);
   }
 
+  const englandTeam  = popularTeams.find((t) => t.name === "England")!;
+  const brazilTeam   = popularTeams.find((t) => t.name === "Brazil")!;
+  const bottomTeams  = popularTeams.filter((t) => ["Argentina", "France", "USA"].includes(t.name));
+
   return (
     <div ref={containerRef}>
 
       {/* ── Search input ── */}
       <div className="relative w-full" style={{ height: 56 }}>
-        {/* search icon */}
         <span
           style={{
             position: "absolute", left: 16, top: "50%",
@@ -75,14 +169,16 @@ export default function TeamPicker({ onTeamSelect }: Props) {
             paddingLeft: 46, paddingRight: 16,
             fontFamily: "var(--font-body)", fontSize: 16,
             color: "var(--input-text)",
-            background: "var(--input-bg)",
+            background: "var(--glass-bg)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
             border: focused
-              ? "2px solid var(--input-focus)"
-              : "2px solid var(--input-border)",
+              ? "1.5px solid var(--glass-border-focus)"
+              : "1.5px solid var(--glass-border)",
             borderRadius: "var(--r-input)",
             outline: "none",
-            boxShadow: "none",
-            transition: "border-color var(--dur) var(--ease)",
+            boxShadow: focused ? "var(--gold-glow-ring)" : "none",
+            transition: "border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)",
           }}
         />
 
@@ -136,43 +232,24 @@ export default function TeamPicker({ onTeamSelect }: Props) {
         )}
       </div>
 
-      {/* ── Popular pills ── */}
+      {/* ── Bento grid — top teams ── */}
       <p
         className="uppercase tracking-[0.12em] font-semibold font-body"
         style={{ fontSize: 11, color: "var(--group-text)", marginTop: 28, marginBottom: 12 }}
       >
         Most followed
       </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {popularTeams.map((t) => (
-          <button
-            key={t.name}
-            onClick={() => handleSelect(t.name)}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "9px 14px",
-              background: "var(--pill-bg)",
-              border: "1.5px solid var(--pill-border)",
-              borderRadius: "var(--r-pill)",
-              fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14,
-              color: "var(--pill-text)",
-              cursor: "pointer",
-              transition: "all var(--dur) var(--ease)",
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLButtonElement;
-              el.style.borderColor = "var(--pill-focus)";
-              el.style.color = "var(--pill-focus-text)";
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLButtonElement;
-              el.style.borderColor = "var(--pill-border)";
-              el.style.color = "var(--pill-text)";
-            }}
-          >
-            <span style={{ fontSize: 17, lineHeight: 1 }} aria-hidden="true">{t.flag}</span>
-            <span>{t.name}</span>
-          </button>
+
+      {/* Row 1: England (tall) + Brazil — same row, England's minHeight drives row height */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 8 }}>
+        <BentoCard team={englandTeam} onSelect={handleSelect} large />
+        <BentoCard team={brazilTeam} onSelect={handleSelect} />
+      </div>
+
+      {/* Row 2: Argentina, France, USA */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 8 }}>
+        {bottomTeams.map((t) => (
+          <BentoCard key={t.name} team={t} onSelect={handleSelect} />
         ))}
       </div>
     </div>

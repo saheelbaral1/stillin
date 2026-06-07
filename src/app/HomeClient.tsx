@@ -91,7 +91,7 @@ export default function HomeClient() {
   // ── Screen 1 — Search ────────────────────────────────────────────────────
   if (!selectedTeam) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: "var(--page-bg)" }}>
+      <div className="min-h-screen flex flex-col kinetic-bg" style={{ background: "var(--page-bg)" }}>
         <div className="flex-1 flex flex-col w-full max-w-[390px] mx-auto px-5">
 
           {/* chrome row — wordmark + theme toggle */}
@@ -104,11 +104,13 @@ export default function HomeClient() {
           <div style={{ marginTop: 40 }}>
             <h1
               style={{
-                fontFamily: "var(--font-body)",
-                fontWeight: 600,
-                fontSize: 38,
-                lineHeight: 1.0,
-                letterSpacing: "-0.025em",
+                fontFamily: "var(--font-kinetic)",
+                fontWeight: 900,
+                fontStyle: "italic",
+                fontSize: "clamp(50px, 13vw, 66px)",
+                lineHeight: 0.90,
+                letterSpacing: "-0.02em",
+                textTransform: "uppercase",
                 color: "var(--heading)",
               }}
             >
