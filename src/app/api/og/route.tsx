@@ -2,6 +2,8 @@
    Called by social platforms when a stillin.vercel.app link is shared. */
 import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { getTeamByName } from '@/lib/teams';
 
 type Status = 'THROUGH' | 'HANGING_ON' | 'IN_DANGER' | 'OUT';
@@ -59,35 +61,34 @@ const STATUS_LABELS: Record<Status, string> = {
 
 const VALID_STATUSES = new Set<string>(['THROUGH', 'HANGING_ON', 'IN_DANGER', 'OUT']);
 
-// Single font URL — only Saira Condensed 900 is loaded; everything else uses sans-serif
-const SAIRA_URL =
-  'https://fonts.gstatic.com/s/sairacondensed/v11/EJRMQgErUN8XuHNEtX81i9TmEkrnbcpg8Keepi2lHw.ttf';
-
-// Fetches a TTF file with a 5-second timeout so a slow CDN can't stall the route
-async function fetchFont(url: string): Promise<ArrayBuffer> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+// Reads a local TTF from public/fonts/ and converts the Node.js Buffer to ArrayBuffer for
+// the ImageResponse fonts API. Returns null if the file is missing so callers can fall back
+// to a system font rather than crashing the route.
+function loadFont(filename: string): ArrayBuffer | null {
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) {
-      console.error(`Font fetch returned ${res.status} for ${url}`);
-      throw new Error(`Font fetch failed — ${url} returned HTTP ${res.status}`);
-    }
-    return await res.arrayBuffer();
-  } finally {
-    clearTimeout(timeoutId);
+    const buf = readFileSync(join(process.cwd(), 'public/fonts', filename));
+    // Buffer.buffer may point to a larger shared pool — slice to the exact file bytes
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+  } catch (err) {
+    console.error(`Could not load font public/fonts/${filename}:`, err);
+    return null;
   }
 }
+
+// Load all three fonts once at module initialisation; cached for every subsequent request
+const sairaData    = loadFont('SairaCondensed-Black.ttf');
+const dmMonoRegular = loadFont('DMMono-Regular.ttf');
+const dmMonoMedium  = loadFont('DMMono-Medium.ttf');
 
 // Handles GET /api/og?team=X&status=X&message=X&rank=X — returns a 1200×630 PNG
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = new URL(request.url);
-  const teamName = searchParams.get('team') ?? 'Unknown';
+  const teamName   = searchParams.get('team') ?? 'Unknown';
   const statusParam = searchParams.get('status') ?? 'OUT';
-  const message = searchParams.get('message') ?? '';
-  const rankParam = searchParams.get('rank');
+  const message    = searchParams.get('message') ?? '';
+  const rankParam  = searchParams.get('rank');
   const parsedRank = rankParam ? parseInt(rankParam, 10) : NaN;
-  const rank = isNaN(parsedRank) ? 1 : Math.max(1, Math.min(12, parsedRank));
+  const rank       = isNaN(parsedRank) ? 1 : Math.max(1, Math.min(12, parsedRank));
 
   // Resolve flag server-side from the canonical teams list so it never travels in the URL
   const teamRecord = getTeamByName(teamName);
@@ -97,19 +98,17 @@ export async function GET(request: NextRequest): Promise<Response> {
   const cfg = STATE_CONFIGS[status];
   const labelText = STATUS_LABELS[status];
 
-  // Load Saira Condensed for the status label; fall back to sans-serif if the CDN is unreachable
-  // so the route still returns a usable image rather than a 500.
-  let sairaData: ArrayBuffer | null = null;
-  try {
-    sairaData = await fetchFont(SAIRA_URL);
-  } catch (err) {
-    console.error('Saira Condensed fetch failed, rendering in sans-serif fallback:', err);
-  }
+  // Resolved font family names — fall back to sans-serif if a file was not found
+  const statusLabelFont    = sairaData     !== null ? 'Saira Condensed' : 'sans-serif';
+  const dmMonoRegularFamily = dmMonoRegular !== null ? 'DM Mono'         : 'sans-serif';
+  const dmMonoMediumFamily  = dmMonoMedium  !== null ? 'DM Mono'         : 'sans-serif';
 
-  const statusLabelFont = sairaData !== null ? 'Saira Condensed' : 'sans-serif';
-  const fontOptions = sairaData !== null
-    ? [{ name: 'Saira Condensed', data: sairaData, weight: 900 as const, style: 'normal' as const }]
-    : [];
+  // Build the fonts array from whichever files loaded successfully
+  const fontOptions = [
+    ...(sairaData     !== null ? [{ name: 'Saira Condensed', data: sairaData,     weight: 900 as const, style: 'normal' as const }] : []),
+    ...(dmMonoRegular !== null ? [{ name: 'DM Mono',         data: dmMonoRegular, weight: 400 as const, style: 'normal' as const }] : []),
+    ...(dmMonoMedium  !== null ? [{ name: 'DM Mono',         data: dmMonoMedium,  weight: 500 as const, style: 'normal' as const }] : []),
+  ];
 
   try {
     return new ImageResponse(
@@ -185,7 +184,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             </div>
             <div
               style={{
-                fontFamily: 'sans-serif',
+                fontFamily: dmMonoMediumFamily,
                 fontWeight: 500,
                 fontSize: 18,
                 letterSpacing: '0.20em',
@@ -287,7 +286,7 @@ export async function GET(request: NextRequest): Promise<Response> {
                 </div>
                 <div
                   style={{
-                    fontFamily: 'sans-serif',
+                    fontFamily: dmMonoRegularFamily,
                     fontWeight: 400,
                     fontSize: 13,
                     color: '#555555',
@@ -340,7 +339,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             />
             <div
               style={{
-                fontFamily: 'sans-serif',
+                fontFamily: dmMonoMediumFamily,
                 fontWeight: 500,
                 fontSize: 16,
                 color: '#C9A84C',
@@ -351,7 +350,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             </div>
             <div
               style={{
-                fontFamily: 'sans-serif',
+                fontFamily: dmMonoRegularFamily,
                 fontWeight: 400,
                 fontSize: 13,
                 color: '#444444',
