@@ -26,6 +26,69 @@ const STATIC_MOMENTS: ViralMoment[] = [
   { emoji: "🎺", headline: "Vuvuzela returns", sub: "South Africa fans brought them back — FIFA said nothing" },
 ];
 
+function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
+  return (
+    <div
+      onClick={() => m.url && window.open(m.url, "_blank", "noopener,noreferrer")}
+      onMouseEnter={(e) => {
+        if (m.url) (e.currentTarget as HTMLDivElement).style.background = "var(--item-hover-bg)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.background = "transparent";
+      }}
+      style={{
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "11px 8px",
+        borderBottom: last ? "none" : "1px solid var(--divider)",
+        cursor: m.url ? "pointer" : "default",
+        borderRadius: 8,
+        transition: "background var(--dur) var(--ease)",
+      }}
+    >
+      {/* Emoji badge */}
+      <div style={{
+        width: 38, height: 38, flexShrink: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--pill-bg)",
+        border: "1.5px solid var(--pill-border)",
+        borderRadius: 10,
+        fontSize: 19,
+      }}>
+        {m.emoji}
+      </div>
+
+      {/* Text block */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          fontFamily: "var(--font-body)", fontWeight: 600,
+          fontSize: 13, lineHeight: 1.25,
+          color: "var(--pill-text)", marginBottom: 2,
+        }}>
+          {m.headline}
+        </p>
+        <p style={{
+          fontFamily: "var(--font-body)", fontSize: 12,
+          color: "var(--group-text)", lineHeight: 1.35,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {m.sub}
+        </p>
+      </div>
+
+      {/* Arrow — only on clickable rows */}
+      {m.url && (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="var(--group-text)" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"
+          aria-hidden="true" style={{ flexShrink: 0 }}>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      )}
+    </div>
+  );
+}
+
 // The "still in?" wordmark: DM Mono 500, gold, always lowercase.
 // The "?" gets gold-deep to create a subtle two-tone effect (per Wordmark.jsx).
 function Wordmark() {
@@ -160,52 +223,22 @@ export default function HomeClient() {
             <TeamPicker onTeamSelect={handleTeamSelect} />
           </div>
 
-          {/* ── Viral moments strip ── */}
+          {/* ── Viral moments — vertical list ── */}
           <div style={{ marginTop: 36 }}>
             <p style={{
               fontSize: 11, fontWeight: 600, letterSpacing: "0.12em",
-              textTransform: "uppercase", color: "var(--group-text)", marginBottom: 12,
+              textTransform: "uppercase", color: "var(--group-text)", marginBottom: 4,
               fontFamily: "var(--font-body)",
             }}>
               Around the tournament
             </p>
-            <div
-              className="hide-scrollbar"
-              style={{
-                display: "flex", gap: 10,
-                overflowX: "auto", paddingBottom: 4,
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              } as React.CSSProperties}
-            >
-              {viralPosts.map((m) => (
-                <div
+            <div>
+              {viralPosts.map((m, i) => (
+                <ViralRow
                   key={m.headline}
-                  onClick={() => m.url && window.open(m.url, "_blank", "noopener,noreferrer")}
-                  style={{
-                    flexShrink: 0, width: 148, padding: "14px 14px 12px",
-                    background: "var(--pill-bg)",
-                    border: "1.5px solid var(--pill-border)",
-                    borderRadius: "var(--r-card)",
-                    display: "flex", flexDirection: "column", gap: 6,
-                    cursor: m.url ? "pointer" : "default",
-                  }}
-                >
-                  <span style={{ fontSize: 28, lineHeight: 1 }}>{m.emoji}</span>
-                  <span style={{
-                    fontFamily: "var(--font-body)", fontWeight: 600,
-                    fontSize: 12, letterSpacing: "0.02em",
-                    color: "var(--pill-text)", lineHeight: 1.3,
-                  }}>
-                    {m.headline}
-                  </span>
-                  <span style={{
-                    fontFamily: "var(--font-body)", fontSize: 11,
-                    color: "var(--group-text)", lineHeight: 1.4,
-                  }}>
-                    {m.sub}
-                  </span>
-                </div>
+                  moment={m}
+                  last={i === viralPosts.length - 1}
+                />
               ))}
             </div>
           </div>
