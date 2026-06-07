@@ -12,7 +12,10 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 type FetchState = "idle" | "loading" | "success" | "stale" | "error";
 
-const VIRAL_MOMENTS = [
+type ViralMoment = { emoji: string; headline: string; sub: string; url?: string };
+
+// Static fallback shown until /api/viral returns live Reddit data.
+const STATIC_MOMENTS: ViralMoment[] = [
   { emoji: "🪖", headline: "Norway's Vikings", sub: "Team photo in full viking gear went global" },
   { emoji: "✈️", headline: "Brazil blesses the jet", sub: "Players baptized the team plane before flying out" },
   { emoji: "🐐", headline: "Messi's last dance", sub: "Argentina captain confirmed this is his final World Cup" },
@@ -48,15 +51,25 @@ export default function HomeClient() {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [teamStatus, setTeamStatus]     = useState<TeamStatus | null>(null);
   const [fetchState, setFetchState]     = useState<FetchState>("idle");
+  const [viralPosts, setViralPosts]     = useState<ViralMoment[]>(STATIC_MOMENTS);
 
-  // On mount, read ?team= from the URL and auto-select it so shared links
-  // like stillin.vercel.app/?team=England land directly on the status card.
+  // On mount: check ?team= URL param + fetch live viral posts.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const teamFromUrl = params.get("team");
     if (teamFromUrl) {
       handleTeamSelect(teamFromUrl);
     }
+
+    // Replace static fallback with live Reddit posts from viral_cache.
+    fetch("/api/viral")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setViralPosts(data as ViralMoment[]);
+        }
+      })
+      .catch(() => { /* keep static fallback silently */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -165,15 +178,17 @@ export default function HomeClient() {
                 msOverflowStyle: "none",
               } as React.CSSProperties}
             >
-              {VIRAL_MOMENTS.map((m) => (
+              {viralPosts.map((m) => (
                 <div
                   key={m.headline}
+                  onClick={() => m.url && window.open(m.url, "_blank", "noopener,noreferrer")}
                   style={{
                     flexShrink: 0, width: 148, padding: "14px 14px 12px",
                     background: "var(--pill-bg)",
                     border: "1.5px solid var(--pill-border)",
                     borderRadius: "var(--r-card)",
                     display: "flex", flexDirection: "column", gap: 6,
+                    cursor: m.url ? "pointer" : "default",
                   }}
                 >
                   <span style={{ fontSize: 28, lineHeight: 1 }}>{m.emoji}</span>
