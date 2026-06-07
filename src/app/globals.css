@@ -179,6 +179,15 @@
 /* Hide scrollbar on horizontal scroll strips */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 
+/* Viral feed ticker — continuous upward scroll, loops seamlessly */
+@keyframes viral-ticker {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.viral-ticker { animation: viral-ticker 28s linear infinite; }
+.viral-ticker-wrap:hover .viral-ticker { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .viral-ticker { animation: none; } }
+
 /* Kinetic background — diagonal stripe + radial gold spotlight */
 .kinetic-bg {
   background-image:

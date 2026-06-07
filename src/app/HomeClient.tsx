@@ -12,57 +12,41 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 type FetchState = "idle" | "loading" | "success" | "stale" | "error";
 
-type ViralMoment = { emoji: string; headline: string; sub: string; url?: string; score?: number };
+type ViralMoment = { emoji: string; headline: string; sub: string; score?: number };
 
 function formatScore(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
 // Static fallback shown until /api/viral returns live Reddit data.
-// Each item links to a Reddit search so they're clickable immediately.
 const STATIC_MOMENTS: ViralMoment[] = [
-  { emoji: "🪖", headline: "Norway's Vikings",     sub: "Team photo in full viking gear went global",              url: "https://reddit.com/r/worldcup/search/?q=norway+vikings&sort=top" },
-  { emoji: "✈️", headline: "Brazil blesses the jet", sub: "Players baptized the team plane before flying out",     url: "https://reddit.com/r/worldcup/search/?q=brazil+plane+bless&sort=top" },
-  { emoji: "🐐", headline: "Messi's last dance",   sub: "Argentina captain confirmed this is his final World Cup", url: "https://reddit.com/r/worldcup/search/?q=messi+last+world+cup&sort=top" },
-  { emoji: "🥁", headline: "Morocco's drummers",   sub: "1,000-strong drum circle outside training camp",          url: "https://reddit.com/r/worldcup/search/?q=morocco+drums+fans&sort=top" },
-  { emoji: "🤖", headline: "Japan's AI kit",       sub: "Adidas used generative AI to design the kit pattern",     url: "https://reddit.com/r/worldcup/search/?q=japan+kit+AI&sort=top" },
-  { emoji: "🌊", headline: "NZ's haka moment",     sub: "All Whites performed haka for the first time at a WC",   url: "https://reddit.com/r/worldcup/search/?q=new+zealand+haka&sort=top" },
-  { emoji: "🦁", headline: "England roar back",    sub: "Comeback vs Netherlands had fans re-watching the final 10 mins", url: "https://reddit.com/r/worldcup/search/?q=england+comeback&sort=top" },
-  { emoji: "🎺", headline: "Vuvuzela returns",     sub: "South Africa fans brought them back — FIFA said nothing", url: "https://reddit.com/r/worldcup/search/?q=vuvuzela+south+africa&sort=top" },
+  { emoji: "🪖", headline: "Norway's Vikings",      sub: "Team photo in full viking gear went global" },
+  { emoji: "✈️", headline: "Brazil blesses the jet", sub: "Players baptized the team plane before flying out" },
+  { emoji: "🐐", headline: "Messi's last dance",    sub: "Argentina captain confirmed this is his final World Cup" },
+  { emoji: "🥁", headline: "Morocco's drummers",    sub: "1,000-strong drum circle outside training camp" },
+  { emoji: "🤖", headline: "Japan's AI kit",        sub: "Adidas used generative AI to design the kit pattern" },
+  { emoji: "🌊", headline: "NZ's haka moment",      sub: "All Whites performed haka for the first time at a WC" },
+  { emoji: "🦁", headline: "England roar back",     sub: "Comeback vs Netherlands had fans re-watching the final 10 mins" },
+  { emoji: "🎺", headline: "Vuvuzela returns",      sub: "South Africa fans brought them back — FIFA said nothing" },
 ];
 
-function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
+function ViralRow({ moment: m }: { moment: ViralMoment }) {
   return (
-    <div
-      onClick={() => m.url && window.open(m.url, "_blank", "noopener,noreferrer")}
-      onMouseEnter={(e) => {
-        if (m.url) (e.currentTarget as HTMLDivElement).style.background = "var(--item-hover-bg)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = "transparent";
-      }}
-      style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "11px 8px",
-        borderBottom: last ? "none" : "1px solid var(--divider)",
-        cursor: m.url ? "pointer" : "default",
-        borderRadius: 8,
-        transition: "background var(--dur) var(--ease)",
-      }}
-    >
-      {/* Emoji badge */}
+    <div style={{
+      display: "flex", alignItems: "center", gap: 12,
+      padding: "11px 8px",
+      borderBottom: "1px solid var(--divider)",
+    }}>
       <div style={{
         width: 38, height: 38, flexShrink: 0,
         display: "flex", alignItems: "center", justifyContent: "center",
         background: "var(--pill-bg)",
         border: "1.5px solid var(--pill-border)",
-        borderRadius: 10,
-        fontSize: 19,
+        borderRadius: 10, fontSize: 19,
       }}>
         {m.emoji}
       </div>
 
-      {/* Text block */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
           fontFamily: "var(--font-body)", fontWeight: 600,
@@ -80,34 +64,22 @@ function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
         </p>
       </div>
 
-      {/* Right side: Reddit upvote score (live posts) or plain arrow (static) */}
-      {m.score != null ? (
+      {m.score != null && (
         <div style={{
           flexShrink: 0, display: "flex", flexDirection: "column",
           alignItems: "center", gap: 1,
         }}>
-          {/* Upvote arrow — Reddit orange */}
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#FF4500"
-            aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#FF4500" aria-hidden="true">
             <path d="M12 4 L20 16 L4 16 Z"/>
           </svg>
           <span style={{
             fontFamily: "var(--font-body)", fontWeight: 700,
-            fontSize: 10, color: "#FF4500", letterSpacing: "0.02em",
-            lineHeight: 1,
+            fontSize: 10, color: "#FF4500", lineHeight: 1,
           }}>
             {formatScore(m.score)}
           </span>
         </div>
-      ) : m.url ? (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-          stroke="var(--group-text)" strokeWidth="2.2"
-          strokeLinecap="round" strokeLinejoin="round"
-          aria-hidden="true" style={{ flexShrink: 0 }}>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-          <polyline points="12 5 19 12 12 19"/>
-        </svg>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -152,7 +124,8 @@ export default function HomeClient() {
       .then((r) => r.json())
       .then((data: unknown) => {
         if (Array.isArray(data) && data.length > 0) {
-          setViralPosts(data as ViralMoment[]);
+          type RawPost = { emoji: string; headline: string; sub: string; score?: number };
+          setViralPosts((data as RawPost[]).map(({ emoji, headline, sub, score }) => ({ emoji, headline, sub, score })));
         }
       })
       .catch(() => { /* keep static fallback silently */ });
@@ -272,14 +245,20 @@ export default function HomeClient() {
                 reddit
               </span>
             </div>
-            <div>
-              {viralPosts.map((m, i) => (
-                <ViralRow
-                  key={m.headline}
-                  moment={m}
-                  last={i === viralPosts.length - 1}
-                />
-              ))}
+            <div
+              className="viral-ticker-wrap"
+              style={{ height: 213, overflow: "hidden", position: "relative" }}
+            >
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0, height: 48,
+                background: "linear-gradient(to bottom, transparent, var(--page-bg))",
+                zIndex: 1, pointerEvents: "none",
+              }} />
+              <div className="viral-ticker">
+                {[...viralPosts, ...viralPosts].map((m, i) => (
+                  <ViralRow key={`${m.headline}-${i}`} moment={m} />
+                ))}
+              </div>
             </div>
           </div>
 
