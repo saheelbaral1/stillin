@@ -64,7 +64,10 @@ async function fetchFont(url: string): Promise<ArrayBuffer> {
   const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) throw new Error(`Font fetch failed (${res.status}): ${url}`);
+    if (!res.ok) {
+      console.error(`Font fetch returned ${res.status} for ${url}`);
+      throw new Error(`Font fetch failed — ${url} returned HTTP ${res.status}`);
+    }
     return await res.arrayBuffer();
   } finally {
     clearTimeout(timeoutId);
@@ -92,9 +95,10 @@ export async function GET(request: NextRequest): Promise<Response> {
       fetchFont('https://fonts.gstatic.com/s/sairacondensed/v11/EJRMQgErUN8XuHNEtX81i9TmEkrnbcpg8Keepi2lHw.ttf'),
       fetchFont('https://fonts.gstatic.com/s/dmmono/v14/aFTR7PB1QTsUX8KYvrGyIYSnbKX9Rlk.ttf'),
       fetchFont('https://fonts.gstatic.com/s/dmmono/v14/aFTU7PB1QTsUX8KYth-orYataIf4VllXuA.ttf'),
-      fetchFont('https://fonts.gstatic.com/s/dmsans/v14/rP2Hp2ywxg089UriCZOIHQ.ttf'),
+      fetchFont('https://fonts.gstatic.com/s/dmsans/v15/rP2tp2ywxg089UriI5-g4vlH9VoD8Cmcqbu6-K6z9mXgjU0.ttf'),
     ]);
 
+    try {
     return new ImageResponse(
       (
         <div
@@ -368,6 +372,11 @@ export async function GET(request: NextRequest): Promise<Response> {
         ],
       }
     );
+    } catch (imgErr) {
+      const msg = imgErr instanceof Error ? imgErr.message : String(imgErr);
+      console.error('ImageResponse generation failed:', msg);
+      throw imgErr;
+    }
   } catch (err) {
     console.error('OG image generation failed:', err);
     return new Response('Failed to generate image', { status: 500 });
