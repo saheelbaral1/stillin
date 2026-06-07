@@ -12,7 +12,7 @@
   --font-mono:    var(--font-mono);    /* DM Mono — "still in?" wordmark ONLY     */
 }
 
-/* ── Design tokens ──────────────────────────────────────────────────────── */
+/* ── Design tokens — light theme (default) ──────────────────────────────── */
 :root {
   /* Brand */
   --gold:       #C9A84C;
@@ -20,8 +20,8 @@
   --gold-soft:  #F4ECCF;
   --ai-grad:    linear-gradient(90deg, #C9A84C 0%, #9B6FD4 100%);
 
-  /* Neutrals — light theme */
-  --bg:         #FFFFFF;
+  /* Neutrals */
+  --bg:         #F5F4F0;
   --surface:    #FFFFFF;
   --surface-2:  #FAFAF8;
   --ink:        #0A0A0A;
@@ -59,6 +59,83 @@
   /* Motion */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --dur:  160ms;
+
+  /* ── Page-level semantic tokens (light) ── */
+  --page-bg:         #F5F4F0;
+  --heading:         #0A0A0A;
+  --subtitle:        #8A8A8A;
+  --footer-text:     #C4C0B8;
+  --nav-text:        #8A8A8A;
+  --input-bg:        #FFFFFF;
+  --input-border:    #E7E5E0;
+  --input-text:      #0A0A0A;
+  --input-ph:        #C4C0B8;
+  --input-focus:     #0A0A0A;
+  --dropdown-bg:     #FFFFFF;
+  --item-text:       #0A0A0A;
+  --item-hover-bg:   #FAFAF8;
+  --group-text:      #8A8A8A;
+  --pill-bg:         #FFFFFF;
+  --pill-border:     #E7E5E0;
+  --pill-text:       #525252;
+  --pill-focus:      #0A0A0A;
+  --pill-focus-text: #0A0A0A;
+  --explain-bg:      #FFFFFF;
+  --explain-border:  #E7E5E0;
+  --explain-text:    #525252;
+  --divider:         #E7E5E0;
+  --progress-track:  #E7E5E0;
+  --loading-text:    #525252;
+  --btn-bg:          #0A0A0A;
+  --btn-text:        #FFFFFF;
+  --toggle-bg:       #FFFFFF;
+  --toggle-border:   #E7E5E0;
+  --toggle-shadow:   0 1px 4px rgba(0,0,0,0.10);
+}
+
+/* ── Dark theme overrides ───────────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Override base neutrals so any existing var(--ink) etc. also switch */
+  --bg:         #0A0A0A;
+  --surface:    #111111;
+  --surface-2:  rgba(255,255,255,0.06);
+  --ink:        #FFFFFF;
+  --ink-2:      #AAAAAA;
+  --ink-3:      #888888;
+  --line:       #222222;
+  --line-strong:#C9A84C;
+
+  /* Page-level semantic tokens (dark) */
+  --page-bg:         #0A0A0A;
+  --heading:         #FFFFFF;
+  --subtitle:        #555555;
+  --footer-text:     #333333;
+  --nav-text:        #444444;
+  --input-bg:        #111111;
+  --input-border:    #222222;
+  --input-text:      #FFFFFF;
+  --input-ph:        #444444;
+  --input-focus:     #C9A84C;
+  --dropdown-bg:     #111111;
+  --item-text:       #FFFFFF;
+  --item-hover-bg:   rgba(255,255,255,0.06);
+  --group-text:      #444444;
+  --pill-bg:         #111111;
+  --pill-border:     #222222;
+  --pill-text:       #888888;
+  --pill-focus:      #C9A84C;
+  --pill-focus-text: #FFFFFF;
+  --explain-bg:      #111111;
+  --explain-border:  #222222;
+  --explain-text:    #AAAAAA;
+  --divider:         #222222;
+  --progress-track:  #222222;
+  --loading-text:    #888888;
+  --btn-bg:          #C9A84C;
+  --btn-text:        #0A0A0A;
+  --toggle-bg:       #161616;
+  --toggle-border:   #333333;
+  --toggle-shadow:   none;
 }
 
 /* ── Live heartbeat animations ──────────────────────────────────────────── */
@@ -85,5 +162,5 @@
   [class*="live"] { animation: none !important; }
 }
 
-/* Dark search input — placeholder needs a CSS rule since it can't use inline styles */
-.search-input-dark::placeholder { color: #444444; }
+/* Search input placeholder — adapts to current theme via CSS var */
+.search-input::placeholder { color: var(--input-ph); }

@@ -8,6 +8,7 @@ import StatusCard from "@/components/StatusCard";
 import ShareButton from "@/components/ShareButton";
 import NotifyCapture from "@/components/NotifyCapture";
 import ExplainButton from "@/components/ExplainButton";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type FetchState = "idle" | "loading" | "success" | "stale" | "error";
 
@@ -90,12 +91,13 @@ export default function HomeClient() {
   // ── Screen 1 — Search ────────────────────────────────────────────────────
   if (!selectedTeam) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
+      <div className="min-h-screen flex flex-col" style={{ background: "var(--page-bg)" }}>
         <div className="flex-1 flex flex-col w-full max-w-[390px] mx-auto px-5">
 
-          {/* chrome row — wordmark */}
-          <div className="flex items-center h-16">
+          {/* chrome row — wordmark + theme toggle */}
+          <div className="flex items-center justify-between h-16">
             <Wordmark />
+            <ThemeToggle />
           </div>
 
           {/* heading block */}
@@ -107,7 +109,7 @@ export default function HomeClient() {
                 fontSize: 38,
                 lineHeight: 1.0,
                 letterSpacing: "-0.025em",
-                color: "#FFFFFF",
+                color: "var(--heading)",
               }}
             >
               Which team<br />are you<br />following?
@@ -120,7 +122,7 @@ export default function HomeClient() {
                 fontStyle: "italic",
                 fontSize: 15,
                 lineHeight: 1.4,
-                color: "#555555",
+                color: "var(--subtitle)",
               }}
             >
               For people who are half-watching.
@@ -140,7 +142,7 @@ export default function HomeClient() {
             className="text-center py-6"
             style={{
               fontFamily: "var(--font-body)", fontWeight: 500,
-              fontSize: 11, letterSpacing: "0.03em", color: "#333333",
+              fontSize: 11, letterSpacing: "0.03em", color: "var(--footer-text)",
             }}
           >
             48 teams · 12 groups · updated live every 60s
@@ -150,15 +152,13 @@ export default function HomeClient() {
     );
   }
 
-  // ── Loading screen — shown between team selection and first result ────────
-  // Full-screen centred: flag + team name + animated progress bar.
-  // Intentionally replaces the status screen entirely so there's no flash of
-  // empty chrome while the /api/status fetch is in flight.
+  // ── Loading screen ────────────────────────────────────────────────────────
   if (fetchState === "loading") {
     const team = getTeamByName(selectedTeam);
     return (
       <div
-        className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center gap-4"
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ background: "var(--page-bg)" }}
       >
         {/* flag */}
         <span style={{ fontSize: 64, lineHeight: 1 }} aria-hidden="true">
@@ -173,7 +173,7 @@ export default function HomeClient() {
             fontSize: 12,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#888888",
+            color: "var(--loading-text)",
           }}
         >
           {selectedTeam}
@@ -183,7 +183,7 @@ export default function HomeClient() {
         <div
           style={{
             width: 200, height: 3,
-            background: "#222222",
+            background: "var(--progress-track)",
             borderRadius: 99,
             overflow: "hidden",
           }}
@@ -203,10 +203,10 @@ export default function HomeClient() {
 
   // ── Screen 2 — Status ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--page-bg)" }}>
       <div className="flex-1 flex flex-col w-full max-w-[390px] mx-auto px-5">
 
-        {/* chrome row — back link + wordmark */}
+        {/* chrome row — back link | theme toggle + wordmark */}
         <div
           className="flex items-center justify-between"
           style={{ height: 64 }}
@@ -216,7 +216,7 @@ export default function HomeClient() {
             style={{
               display: "flex", alignItems: "center", gap: 6,
               fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 13,
-              color: "#444444",
+              color: "var(--nav-text)",
               background: "none", border: "none", cursor: "pointer",
               padding: 0, marginLeft: -2,
             }}
@@ -230,14 +230,17 @@ export default function HomeClient() {
             </svg>
             Change team
           </button>
-          <Wordmark />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ThemeToggle />
+            <Wordmark />
+          </div>
         </div>
 
         {/* stale cache */}
         {fetchState === "stale" && (
           <p
             className="text-center py-12"
-            style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--ink-3)" }}
+            style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--subtitle)" }}
           >
             Data loading — check back in a moment.
           </p>
@@ -277,7 +280,7 @@ export default function HomeClient() {
 
             {/* notify — only for uncertain states */}
             {(teamStatus.status === "HANGING_ON" || teamStatus.status === "IN_DANGER") && (
-              <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+              <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid var(--divider)" }}>
                 <NotifyCapture teamName={teamStatus.team} />
               </div>
             )}
@@ -290,7 +293,7 @@ export default function HomeClient() {
               className="text-center"
               style={{
                 fontFamily: "var(--font-body)", fontWeight: 500,
-                fontSize: 11, letterSpacing: "0.03em", color: "#333333",
+                fontSize: 11, letterSpacing: "0.03em", color: "var(--footer-text)",
                 padding: "16px 0 20px",
               }}
             >

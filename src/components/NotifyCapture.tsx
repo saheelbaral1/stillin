@@ -18,7 +18,7 @@ export default function NotifyCapture({ teamName }: Props) {
       <p style={{
         textAlign: "center",
         display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-        fontFamily: "var(--font-body)", fontSize: 14, color: "#AAAAAA",
+        fontFamily: "var(--font-body)", fontSize: 14, color: "var(--explain-text)",
       }}>
         {/* check icon */}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
@@ -60,7 +60,7 @@ export default function NotifyCapture({ teamName }: Props) {
       {/* label with bell icon */}
       <p style={{
         display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-        fontFamily: "var(--font-body)", fontSize: 12.5, color: "#555555",
+        fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--subtitle)",
         marginBottom: 10,
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -83,22 +83,22 @@ export default function NotifyCapture({ teamName }: Props) {
           style={{
             flex: 1, height: 48, padding: "0 14px",
             fontFamily: "var(--font-body)", fontSize: 14,
-            color: "#FFFFFF",
-            background: "#111111",
-            border: "1.5px solid #222222",
+            color: "var(--input-text)",
+            background: "var(--input-bg)",
+            border: "1.5px solid var(--input-border)",
             borderRadius: 11,
             outline: "none",
             transition: "border-color var(--dur) var(--ease)",
           }}
-          onFocus={(e) => { (e.currentTarget as HTMLInputElement).style.borderColor = "#C9A84C"; }}
-          onBlur={(e)  => { (e.currentTarget as HTMLInputElement).style.borderColor = "#222222"; }}
+          onFocus={(e)  => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--input-focus)"; }}
+          onBlur={(e)   => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--input-border)"; }}
         />
         <button
           type="submit"
           disabled={uiState === "loading" || !email.trim()}
           style={{
             height: 48, padding: "0 18px", flexShrink: 0,
-            background: "var(--ink)", color: "#fff",
+            background: "var(--btn-bg)", color: "var(--btn-text)",
             border: "none", borderRadius: 12, cursor: "pointer",
             fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14,
             whiteSpace: "nowrap",
@@ -124,7 +124,7 @@ export default function NotifyCapture({ teamName }: Props) {
           style={{
             background: "none", border: "none", cursor: "pointer", padding: 0,
             fontFamily: "var(--font-body)", fontWeight: 400, fontSize: 13,
-            color: "var(--ink-3)",
+            color: "var(--subtitle)",
           }}
         >
           No thanks

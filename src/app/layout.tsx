@@ -72,9 +72,21 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${sairaCondensed.variable} ${dmSans.variable} ${dmMono.variable}`}
-      style={{ backgroundColor: "#FFFFFF" }}
     >
-      <body className="min-h-screen font-body text-[#0A0A0A] antialiased">
+      {/*
+        Inline script runs synchronously before the first paint so the saved
+        theme is applied immediately — preventing a flash of the wrong theme.
+        Defaults to "dark" if no preference has been saved.
+      */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.dataset.theme=t;}catch(e){}})()`,
+        }}
+      />
+      <body
+        className="min-h-screen font-body antialiased"
+        style={{ background: "var(--page-bg)", color: "var(--ink)" }}
+      >
         {children}
       </body>
     </html>

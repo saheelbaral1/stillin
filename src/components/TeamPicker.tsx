@@ -46,7 +46,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
           style={{
             position: "absolute", left: 16, top: "50%",
             transform: "translateY(-50%)",
-            color: "#444444",
+            color: "var(--group-text)",
             display: "flex",
             pointerEvents: "none",
           }}
@@ -60,7 +60,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
           </svg>
         </span>
         <input
-          className="search-input-dark"
+          className="search-input"
           type="text"
           role="combobox"
           aria-expanded={showDrop}
@@ -74,13 +74,15 @@ export default function TeamPicker({ onTeamSelect }: Props) {
             width: "100%", height: "100%",
             paddingLeft: 46, paddingRight: 16,
             fontFamily: "var(--font-body)", fontSize: 16,
-            color: "#FFFFFF",
-            background: "#111111",
-            border: focused ? "2px solid #C9A84C" : "2px solid #222222",
+            color: "var(--input-text)",
+            background: "var(--input-bg)",
+            border: focused
+              ? "2px solid var(--input-focus)"
+              : "2px solid var(--input-border)",
             borderRadius: "var(--r-input)",
             outline: "none",
             boxShadow: "none",
-            transition: "border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)",
+            transition: "border-color var(--dur) var(--ease)",
           }}
         />
 
@@ -91,8 +93,8 @@ export default function TeamPicker({ onTeamSelect }: Props) {
             className="absolute top-full left-0 right-0 z-50 mt-1"
             style={{
               padding: 6, listStyle: "none",
-              background: "#111111",
-              border: "2px solid #222222",
+              background: "var(--dropdown-bg)",
+              border: "2px solid var(--input-border)",
               borderRadius: "var(--r-input)",
               boxShadow: "var(--shadow-pop)",
               overflow: "hidden",
@@ -109,17 +111,21 @@ export default function TeamPicker({ onTeamSelect }: Props) {
                     background: "transparent", border: "none",
                     borderRadius: 9, cursor: "pointer",
                     fontFamily: "var(--font-body)", fontSize: 15,
-                    color: "#FFFFFF",
+                    color: "var(--item-text)",
                     transition: "background var(--dur) var(--ease)",
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "var(--item-hover-bg)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                  }}
                 >
                   <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden="true">{t.flag}</span>
                   <span style={{ flex: 1 }}>{t.name}</span>
                   <span style={{
                     fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 11,
-                    letterSpacing: "0.03em", color: "#444444",
+                    letterSpacing: "0.03em", color: "var(--group-text)",
                   }}>
                     GROUP {t.group}
                   </span>
@@ -133,7 +139,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
       {/* ── Popular pills ── */}
       <p
         className="uppercase tracking-[0.12em] font-semibold font-body"
-        style={{ fontSize: 11, color: "#444444", marginTop: 28, marginBottom: 12 }}
+        style={{ fontSize: 11, color: "var(--group-text)", marginTop: 28, marginBottom: 12 }}
       >
         Most followed
       </p>
@@ -145,23 +151,23 @@ export default function TeamPicker({ onTeamSelect }: Props) {
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               padding: "9px 14px",
-              background: "#111111",
-              border: "1.5px solid #222222",
+              background: "var(--pill-bg)",
+              border: "1.5px solid var(--pill-border)",
               borderRadius: "var(--r-pill)",
               fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14,
-              color: "#888888",
+              color: "var(--pill-text)",
               cursor: "pointer",
               transition: "all var(--dur) var(--ease)",
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLButtonElement;
-              el.style.borderColor = "#C9A84C";
-              el.style.color = "#FFFFFF";
+              el.style.borderColor = "var(--pill-focus)";
+              el.style.color = "var(--pill-focus-text)";
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLButtonElement;
-              el.style.borderColor = "#222222";
-              el.style.color = "#888888";
+              el.style.borderColor = "var(--pill-border)";
+              el.style.color = "var(--pill-text)";
             }}
           >
             <span style={{ fontSize: 17, lineHeight: 1 }} aria-hidden="true">{t.flag}</span>
