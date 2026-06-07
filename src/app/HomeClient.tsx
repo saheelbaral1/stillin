@@ -258,7 +258,7 @@ export default function HomeClient() {
 
             {/* share button */}
             <div style={{ marginTop: 16 }}>
-              <ShareButton teamName={teamStatus.team} status={teamStatus.status} />
+              <ShareButton teamName={teamStatus.team} status={teamStatus.status} message={teamStatus.message} />
             </div>
 
             {/* AI explain */}

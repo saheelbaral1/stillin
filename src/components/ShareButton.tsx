@@ -5,13 +5,14 @@ import { useState } from "react";
 type Props = {
   teamName: string;
   status: string;
+  message: string;
 };
 
-export default function ShareButton({ teamName, status }: Props) {
+export default function ShareButton({ teamName, status, message }: Props) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    const url = `https://stillin.vercel.app/?team=${encodeURIComponent(teamName)}&status=${status}`;
+    const url = `https://stillin.vercel.app/?team=${encodeURIComponent(teamName)}&status=${encodeURIComponent(status)}&message=${encodeURIComponent(message)}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

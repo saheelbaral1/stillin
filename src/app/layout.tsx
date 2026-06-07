@@ -38,7 +38,31 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "still in?",
   description:
-    "Find out if your team is still in the World Cup 2026 — updated live.",
+    "For people who are half-watching. Find out if your team is still in the World Cup 2026 — updated live.",
+  openGraph: {
+    title: "still in?",
+    description: "For people who are half-watching.",
+    url: "https://stillin.vercel.app",
+    siteName: "still in?",
+    images: [
+      {
+        url: "https://stillin.vercel.app/api/og?team=England&status=HANGING_ON&message=Is%20your%20team%20still%20in%3F&rank=7",
+        width: 1200,
+        height: 630,
+        alt: "still in? — World Cup 2026 qualification tracker",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "still in?",
+    description: "For people who are half-watching.",
+    images: [
+      "https://stillin.vercel.app/api/og?team=England&status=HANGING_ON&message=Is%20your%20team%20still%20in%3F&rank=7",
+    ],
+  },
 };
 
 export default function RootLayout({
