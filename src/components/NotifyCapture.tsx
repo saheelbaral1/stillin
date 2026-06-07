@@ -18,7 +18,7 @@ export default function NotifyCapture({ teamName }: Props) {
       <p style={{
         textAlign: "center",
         display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-        fontFamily: "var(--font-body)", fontSize: 14, color: "var(--ink)",
+        fontFamily: "var(--font-body)", fontSize: 14, color: "#AAAAAA",
       }}>
         {/* check icon */}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
@@ -60,7 +60,7 @@ export default function NotifyCapture({ teamName }: Props) {
       {/* label with bell icon */}
       <p style={{
         display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-        fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--ink-3)",
+        fontFamily: "var(--font-body)", fontSize: 12.5, color: "#555555",
         marginBottom: 10,
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -83,15 +83,15 @@ export default function NotifyCapture({ teamName }: Props) {
           style={{
             flex: 1, height: 48, padding: "0 14px",
             fontFamily: "var(--font-body)", fontSize: 14,
-            color: "var(--ink)",
-            background: "var(--surface)",
-            border: "1.5px solid var(--line)",
+            color: "#FFFFFF",
+            background: "#111111",
+            border: "1.5px solid #222222",
             borderRadius: 11,
             outline: "none",
             transition: "border-color var(--dur) var(--ease)",
           }}
-          onFocus={(e) => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--ink)"; }}
-          onBlur={(e)  => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"; }}
+          onFocus={(e) => { (e.currentTarget as HTMLInputElement).style.borderColor = "#C9A84C"; }}
+          onBlur={(e)  => { (e.currentTarget as HTMLInputElement).style.borderColor = "#222222"; }}
         />
         <button
           type="submit"

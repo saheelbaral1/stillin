@@ -81,7 +81,7 @@ function QualifyMeter({ rank }: { rank: number }) {
   }
 
   return (
-    <div style={{ width: "100%", marginTop: 18 }}>
+    <div style={{ width: "100%", marginTop: 18, position: "relative", zIndex: 1 }}>
       {/* cells */}
       <div style={{ display: "flex", gap: 3, marginBottom: 9 }}>
         {Array.from({ length: 12 }).map((_, i) => {
@@ -157,14 +157,13 @@ export default function StatusCard({ status }: Props) {
     ? "1px solid var(--gold)"
     : "1px solid rgba(201,168,76,0.4)";
   const label = isPreTournament ? "JUNE 11" : LABELS[status.status];
-  // Multi-word labels (HANGING ON, IN DANGER) split across two lines; single-
-  // word labels (THROUGH, OUT) render on one. Multi-word uses a smaller size so
-  // the two-line block stays proportional — mirroring the reference StatusCard.jsx.
-  const labelWords   = label.split(" ");
-  const isMultiWord  = labelWords.length > 1;
-  const labelSize    = isMultiWord ? 60 : 74;
-  const showLive     = !isPreTournament && (status.status === "HANGING_ON" || status.status === "IN_DANGER");
-  const showMeter    = !isPreTournament && status.thirdPlaceRank !== null;
+  // Multi-word labels (HANGING ON, IN DANGER) split across two lines.
+  // All labels use 86px so the scoreboard text bleeds nearly edge-to-edge.
+  const labelWords  = label.split(" ");
+  const isMultiWord = labelWords.length > 1;
+  const labelSize   = 86;
+  const showLive    = !isPreTournament && (status.status === "HANGING_ON" || status.status === "IN_DANGER");
+  const showMeter   = !isPreTournament && status.thirdPlaceRank !== null;
 
   return (
     <div
@@ -178,6 +177,26 @@ export default function StatusCard({ status }: Props) {
         overflow: "hidden",
       }}
     >
+      {/* Flag watermark — large faded flag centred behind the status label.
+          Placed first in DOM so it sits below the depth gradient and all content. */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          fontSize: 200,
+          lineHeight: 1,
+          opacity: 0.08,
+          pointerEvents: "none",
+          zIndex: 0,
+          userSelect: "none",
+        }}
+        aria-hidden="true"
+      >
+        {status.flag}
+      </div>
+
       {/* Depth gradient — transparent → dark at foot, makes on-fill type pop */}
       <div
         style={{
@@ -187,7 +206,7 @@ export default function StatusCard({ status }: Props) {
       />
 
       {/* ── Top row: group context + live pill ── */}
-      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span
           style={{
             fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 11,
@@ -200,24 +219,19 @@ export default function StatusCard({ status }: Props) {
         {showLive && <LivePill />}
       </div>
 
-      {/* ── Flag + team name ── */}
+      {/* ── Flag + team name — broadcast header row ── */}
       <div
         style={{
-          position: "relative", marginTop: 18,
-          display: "flex", flexDirection: "column",
-          alignItems: "center", gap: 8,
+          position: "relative", zIndex: 1, marginTop: 18,
+          display: "flex", alignItems: "center", gap: 10,
         }}
       >
         <span
-          style={{
-            fontSize: 64, lineHeight: 1,
-            filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.30))",
-          }}
+          style={{ fontSize: 28, lineHeight: 1 }}
           aria-label={status.team}
         >
           {status.flag}
         </span>
-
         <span
           style={{
             fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 12.5,
@@ -230,7 +244,7 @@ export default function StatusCard({ status }: Props) {
       </div>
 
       {/* ── Status label — the dominant element on screen ── */}
-      <div style={{ position: "relative", marginTop: 14, textAlign: "center" }}>
+      <div style={{ position: "relative", zIndex: 1, marginTop: 14, textAlign: "center" }}>
         <h2
           style={{
             fontFamily: "var(--font-display)",
@@ -253,7 +267,7 @@ export default function StatusCard({ status }: Props) {
       {/* ── Message ── */}
       <p
         style={{
-          position: "relative", marginTop: 18, textAlign: "center",
+          position: "relative", zIndex: 1, marginTop: 18, textAlign: "center",
           fontFamily: "var(--font-body)", fontWeight: 500,
           fontSize: 15.5, lineHeight: 1.4,
           color: "var(--on-fill)",
@@ -268,7 +282,7 @@ export default function StatusCard({ status }: Props) {
       ) : (
         <p
           style={{
-            position: "relative", marginTop: 12, textAlign: "center",
+            position: "relative", zIndex: 1, marginTop: 12, textAlign: "center",
             fontFamily: "var(--font-body)", fontSize: 11,
             letterSpacing: "0.04em",
             color: "var(--on-fill-dim)",

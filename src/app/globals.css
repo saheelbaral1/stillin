@@ -84,3 +84,6 @@
 @media (prefers-reduced-motion: reduce) {
   [class*="live"] { animation: none !important; }
 }
+
+/* Dark search input — placeholder needs a CSS rule since it can't use inline styles */
+.search-input-dark::placeholder { color: #444444; }

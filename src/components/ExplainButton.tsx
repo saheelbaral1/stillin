@@ -77,8 +77,8 @@ export default function ExplainButton({ teamName, status }: Props) {
         <div
           style={{
             width: "100%",
-            background: "var(--surface)",
-            border: "1.5px solid var(--line)",
+            background: "#111111",
+            border: "1.5px solid #222222",
             borderRadius: 12,
             padding: "14px 15px",
             boxShadow: "var(--shadow-card)",
@@ -87,7 +87,7 @@ export default function ExplainButton({ teamName, status }: Props) {
           <p style={{
             fontFamily: "var(--font-body)", fontWeight: 400,
             fontSize: 14, lineHeight: 1.55,
-            color: "var(--ink-2)",
+            color: "#AAAAAA",
           }}>
             {body}
           </p>

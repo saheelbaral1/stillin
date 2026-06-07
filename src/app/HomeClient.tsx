@@ -90,7 +90,7 @@ export default function HomeClient() {
   // ── Screen 1 — Search ────────────────────────────────────────────────────
   if (!selectedTeam) {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
         <div className="flex-1 flex flex-col w-full max-w-[390px] mx-auto px-5">
 
           {/* chrome row — wordmark */}
@@ -107,7 +107,7 @@ export default function HomeClient() {
                 fontSize: 38,
                 lineHeight: 1.0,
                 letterSpacing: "-0.025em",
-                color: "var(--ink)",
+                color: "#FFFFFF",
               }}
             >
               Which team<br />are you<br />following?
@@ -120,7 +120,7 @@ export default function HomeClient() {
                 fontStyle: "italic",
                 fontSize: 15,
                 lineHeight: 1.4,
-                color: "var(--ink-3)",
+                color: "#555555",
               }}
             >
               For people who are half-watching.
@@ -140,7 +140,7 @@ export default function HomeClient() {
             className="text-center py-6"
             style={{
               fontFamily: "var(--font-body)", fontWeight: 500,
-              fontSize: 11, letterSpacing: "0.03em", color: "var(--ink-3)",
+              fontSize: 11, letterSpacing: "0.03em", color: "#333333",
             }}
           >
             48 teams · 12 groups · updated live every 60s
@@ -158,7 +158,7 @@ export default function HomeClient() {
     const team = getTeamByName(selectedTeam);
     return (
       <div
-        className="min-h-screen bg-white flex flex-col items-center justify-center gap-4"
+        className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center gap-4"
       >
         {/* flag */}
         <span style={{ fontSize: 64, lineHeight: 1 }} aria-hidden="true">
@@ -173,7 +173,7 @@ export default function HomeClient() {
             fontSize: 12,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#525252",
+            color: "#888888",
           }}
         >
           {selectedTeam}
@@ -183,7 +183,7 @@ export default function HomeClient() {
         <div
           style={{
             width: 200, height: 3,
-            background: "#E7E5E0",
+            background: "#222222",
             borderRadius: 99,
             overflow: "hidden",
           }}
@@ -203,7 +203,7 @@ export default function HomeClient() {
 
   // ── Screen 2 — Status ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
       <div className="flex-1 flex flex-col w-full max-w-[390px] mx-auto px-5">
 
         {/* chrome row — back link + wordmark */}
@@ -216,7 +216,7 @@ export default function HomeClient() {
             style={{
               display: "flex", alignItems: "center", gap: 6,
               fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 13,
-              color: "var(--ink-3)",
+              color: "#444444",
               background: "none", border: "none", cursor: "pointer",
               padding: 0, marginLeft: -2,
             }}
@@ -290,7 +290,7 @@ export default function HomeClient() {
               className="text-center"
               style={{
                 fontFamily: "var(--font-body)", fontWeight: 500,
-                fontSize: 11, letterSpacing: "0.03em", color: "var(--ink-3)",
+                fontSize: 11, letterSpacing: "0.03em", color: "#333333",
                 padding: "16px 0 20px",
               }}
             >
