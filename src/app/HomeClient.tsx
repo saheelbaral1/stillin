@@ -30,13 +30,27 @@ const STATIC_MOMENTS: ViralMoment[] = [
   { emoji: "🎺", headline: "Vuvuzela returns",      sub: "South Africa fans brought them back — FIFA said nothing" },
 ];
 
-function ViralRow({ moment: m }: { moment: ViralMoment }) {
+function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(m.sub + " 2026 World Cup")}`;
+
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "11px 8px",
-      borderBottom: "1px solid var(--divider)",
-    }}>
+    <div
+      onClick={() => window.open(googleUrl, "_blank", "noopener,noreferrer")}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.background = "var(--item-hover-bg)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.background = "transparent";
+      }}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "11px 8px",
+        borderBottom: last ? "none" : "1px solid var(--divider)",
+        cursor: "pointer",
+        borderRadius: 8,
+        transition: "background var(--dur) var(--ease)",
+      }}
+    >
       <div style={{
         width: 38, height: 38, flexShrink: 0,
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -64,7 +78,7 @@ function ViralRow({ moment: m }: { moment: ViralMoment }) {
         </p>
       </div>
 
-      {m.score != null && (
+      {m.score != null ? (
         <div style={{
           flexShrink: 0, display: "flex", flexDirection: "column",
           alignItems: "center", gap: 1,
@@ -74,11 +88,20 @@ function ViralRow({ moment: m }: { moment: ViralMoment }) {
           </svg>
           <span style={{
             fontFamily: "var(--font-body)", fontWeight: 700,
-            fontSize: 10, color: "#FF4500", lineHeight: 1,
+            fontSize: 10, color: "#FF4500", letterSpacing: "0.02em",
+            lineHeight: 1,
           }}>
             {formatScore(m.score)}
           </span>
         </div>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="var(--group-text)" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"
+          aria-hidden="true" style={{ flexShrink: 0 }}>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
       )}
     </div>
   );
@@ -245,20 +268,14 @@ export default function HomeClient() {
                 reddit
               </span>
             </div>
-            <div
-              className="viral-ticker-wrap"
-              style={{ height: 213, overflow: "hidden", position: "relative" }}
-            >
-              <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0, height: 48,
-                background: "linear-gradient(to bottom, transparent, var(--page-bg))",
-                zIndex: 1, pointerEvents: "none",
-              }} />
-              <div className="viral-ticker">
-                {[...viralPosts, ...viralPosts].map((m, i) => (
-                  <ViralRow key={`${m.headline}-${i}`} moment={m} />
-                ))}
-              </div>
+            <div>
+              {viralPosts.map((m, i) => (
+                <ViralRow
+                  key={m.headline}
+                  moment={m}
+                  last={i === viralPosts.length - 1}
+                />
+              ))}
             </div>
           </div>
 

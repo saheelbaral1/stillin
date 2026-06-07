@@ -212,7 +212,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
           </svg>
         </span>
         {/* Typewriter overlay — visible only when input is idle */}
-        {!focused && !query && animText && (
+        {!focused && !query && (
           <span
             aria-hidden="true"
             style={{
@@ -229,7 +229,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
               userSelect: "none",
             }}
           >
-            {animText}
+            {animText}<span className="type-cursor" />
           </span>
         )}
 
