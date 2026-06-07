@@ -2,7 +2,7 @@ name: Refresh WC Standings
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,4 +11,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Trigger standings refresh
-        run: curl -f -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://stillin.vercel.app/api/cron/refresh
+        env:
+          SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -f -H "Authorization: Bearer $SECRET" https://stillin.vercel.app/api/cron/refresh
