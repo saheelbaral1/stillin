@@ -12,7 +12,11 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 type FetchState = "idle" | "loading" | "success" | "stale" | "error";
 
-type ViralMoment = { emoji: string; headline: string; sub: string; url?: string };
+type ViralMoment = { emoji: string; headline: string; sub: string; url?: string; score?: number };
+
+function formatScore(n: number): string {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
 
 // Static fallback shown until /api/viral returns live Reddit data.
 // Each item links to a Reddit search so they're clickable immediately.
@@ -38,7 +42,7 @@ function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
         (e.currentTarget as HTMLDivElement).style.background = "transparent";
       }}
       style={{
-        display: "flex", alignItems: "center", gap: 14,
+        display: "flex", alignItems: "center", gap: 12,
         padding: "11px 8px",
         borderBottom: last ? "none" : "1px solid var(--divider)",
         cursor: m.url ? "pointer" : "default",
@@ -76,8 +80,26 @@ function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
         </p>
       </div>
 
-      {/* Arrow — only on clickable rows */}
-      {m.url && (
+      {/* Right side: Reddit upvote score (live posts) or plain arrow (static) */}
+      {m.score != null ? (
+        <div style={{
+          flexShrink: 0, display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 1,
+        }}>
+          {/* Upvote arrow — Reddit orange */}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#FF4500"
+            aria-hidden="true">
+            <path d="M12 4 L20 16 L4 16 Z"/>
+          </svg>
+          <span style={{
+            fontFamily: "var(--font-body)", fontWeight: 700,
+            fontSize: 10, color: "#FF4500", letterSpacing: "0.02em",
+            lineHeight: 1,
+          }}>
+            {formatScore(m.score)}
+          </span>
+        </div>
+      ) : m.url ? (
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           stroke="var(--group-text)" strokeWidth="2.2"
           strokeLinecap="round" strokeLinejoin="round"
@@ -85,7 +107,7 @@ function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
           <line x1="5" y1="12" x2="19" y2="12"/>
           <polyline points="12 5 19 12 12 19"/>
         </svg>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -226,13 +248,30 @@ export default function HomeClient() {
 
           {/* ── Viral moments — vertical list ── */}
           <div style={{ marginTop: 36 }}>
-            <p style={{
-              fontSize: 11, fontWeight: 600, letterSpacing: "0.12em",
-              textTransform: "uppercase", color: "var(--group-text)", marginBottom: 4,
-              fontFamily: "var(--font-body)",
-            }}>
-              Around the tournament
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <p style={{
+                fontSize: 11, fontWeight: 600, letterSpacing: "0.12em",
+                textTransform: "uppercase", color: "var(--group-text)",
+                fontFamily: "var(--font-body)",
+              }}>
+                What people are talking about
+              </p>
+              {/* Reddit badge */}
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 3,
+                padding: "2px 7px", borderRadius: 999,
+                background: "#FF4500", color: "#FFFFFF",
+                fontFamily: "var(--font-body)", fontWeight: 700,
+                fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase",
+                flexShrink: 0,
+              }}>
+                {/* Upvote arrow */}
+                <svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 4 L20 16 L4 16 Z"/>
+                </svg>
+                reddit
+              </span>
+            </div>
             <div>
               {viralPosts.map((m, i) => (
                 <ViralRow
