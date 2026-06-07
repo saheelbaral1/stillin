@@ -37,6 +37,17 @@ export default function HomeClient() {
   const [teamStatus, setTeamStatus]     = useState<TeamStatus | null>(null);
   const [fetchState, setFetchState]     = useState<FetchState>("idle");
 
+  // On mount, read ?team= from the URL and auto-select it so shared links
+  // like stillin.vercel.app/?team=England land directly on the status card.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const teamFromUrl = params.get("team");
+    if (teamFromUrl) {
+      handleTeamSelect(teamFromUrl);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fetch /api/status whenever selectedTeam changes. The route reads from
   // standings_cache — it never hits the football-data.org API directly.
   useEffect(() => {
@@ -89,12 +100,6 @@ export default function HomeClient() {
 
           {/* heading block */}
           <div style={{ marginTop: 40 }}>
-            <p
-              className="uppercase tracking-[0.12em] text-[11px] font-semibold font-body"
-              style={{ color: "var(--ink-3)", marginBottom: 16 }}
-            >
-              World Cup 2026 · Live
-            </p>
             <h1
               style={{
                 fontFamily: "var(--font-body)",
