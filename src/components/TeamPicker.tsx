@@ -100,11 +100,18 @@ function BentoCard({
   );
 }
 
-export default function TeamPicker({ onTeamSelect }: Props) {
-  const [query,   setQuery]   = useState("");
-  const [focused, setFocused] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+// Shuffled once at module load — stable across re-renders, different every page load.
+const SHUFFLED_NAMES = [...TEAMS.map((t) => t.name)].sort(() => Math.random() - 0.5);
 
+export default function TeamPicker({ onTeamSelect }: Props) {
+  const [query,    setQuery]    = useState("");
+  const [focused,  setFocused]  = useState(false);
+  const [animText, setAnimText] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cancelRef    = useRef(false);
+  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close dropdown on outside click.
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -114,6 +121,53 @@ export default function TeamPicker({ onTeamSelect }: Props) {
     document.addEventListener("mousedown", onMouseDown);
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, []);
+
+  // Typewriter animation — runs when input is idle (empty + unfocused).
+  useEffect(() => {
+    if (focused || query) {
+      setAnimText("");
+      return;
+    }
+
+    cancelRef.current = false;
+    let nameIdx  = 0;
+    let charIdx  = 0;
+    let deleting = false;
+
+    function tick() {
+      if (cancelRef.current) return;
+      const name = SHUFFLED_NAMES[nameIdx % SHUFFLED_NAMES.length];
+
+      if (!deleting) {
+        charIdx++;
+        setAnimText(name.slice(0, charIdx));
+        if (charIdx === name.length) {
+          deleting = true;
+          timerRef.current = setTimeout(tick, 900);
+        } else {
+          timerRef.current = setTimeout(tick, 60);
+        }
+      } else {
+        charIdx--;
+        setAnimText(name.slice(0, charIdx));
+        if (charIdx === 0) {
+          deleting = false;
+          nameIdx++;
+          timerRef.current = setTimeout(tick, 250);
+        } else {
+          timerRef.current = setTimeout(tick, 35);
+        }
+      }
+    }
+
+    timerRef.current = setTimeout(tick, 400);
+
+    return () => {
+      cancelRef.current = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setAnimText("");
+    };
+  }, [focused, query]);
 
   const trimmed = query.trim().toLowerCase();
   const results = trimmed
@@ -153,6 +207,27 @@ export default function TeamPicker({ onTeamSelect }: Props) {
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </span>
+        {/* Typewriter overlay — visible only when input is idle */}
+        {!focused && !query && animText && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: 46,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              fontFamily: "var(--font-body)",
+              fontSize: 16,
+              color: "var(--input-ph)",
+              whiteSpace: "nowrap",
+              userSelect: "none",
+            }}
+          >
+            {animText}
+          </span>
+        )}
+
         <input
           className="search-input"
           type="text"
@@ -163,7 +238,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
           value={query}
           onChange={(e) => { setQuery(e.target.value); setFocused(true); }}
           onFocus={() => setFocused(true)}
-          placeholder="Search your team…"
+          placeholder={focused || query ? "Search your team…" : ""}
           style={{
             width: "100%", height: "100%",
             paddingLeft: 46, paddingRight: 16,
