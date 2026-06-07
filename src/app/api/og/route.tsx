@@ -2,6 +2,7 @@
    Called by social platforms when a stillin.vercel.app link is shared. */
 import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
+import { getTeamByName } from '@/lib/teams';
 
 type Status = 'THROUGH' | 'HANGING_ON' | 'IN_DANGER' | 'OUT';
 
@@ -58,7 +59,11 @@ const STATUS_LABELS: Record<Status, string> = {
 
 const VALID_STATUSES = new Set<string>(['THROUGH', 'HANGING_ON', 'IN_DANGER', 'OUT']);
 
-// Fetches a TTF font file from Google Fonts CDN with a 5-second timeout to avoid hanging builds
+// Single font URL — only Saira Condensed 900 is loaded; everything else uses sans-serif
+const SAIRA_URL =
+  'https://fonts.gstatic.com/s/sairacondensed/v11/EJRMQgErUN8XuHNEtX81i9TmEkrnbcpg8Keepi2lHw.ttf';
+
+// Fetches a TTF file with a 5-second timeout so a slow CDN can't stall the route
 async function fetchFont(url: string): Promise<ArrayBuffer> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -74,31 +79,39 @@ async function fetchFont(url: string): Promise<ArrayBuffer> {
   }
 }
 
-// Handles GET /api/og?team=X&flag=X&status=X&message=X&rank=X — returns a 1200×630 PNG
+// Handles GET /api/og?team=X&status=X&message=X&rank=X — returns a 1200×630 PNG
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = new URL(request.url);
-  const team = searchParams.get('team') ?? 'Unknown';
-  const flag = searchParams.get('flag') ?? '🏳';
+  const teamName = searchParams.get('team') ?? 'Unknown';
   const statusParam = searchParams.get('status') ?? 'OUT';
   const message = searchParams.get('message') ?? '';
   const rankParam = searchParams.get('rank');
   const parsedRank = rankParam ? parseInt(rankParam, 10) : NaN;
   const rank = isNaN(parsedRank) ? 1 : Math.max(1, Math.min(12, parsedRank));
 
+  // Resolve flag server-side from the canonical teams list so it never travels in the URL
+  const teamRecord = getTeamByName(teamName);
+  const flag = teamRecord?.flag ?? '🌍';
+
   const status: Status = VALID_STATUSES.has(statusParam) ? (statusParam as Status) : 'OUT';
   const cfg = STATE_CONFIGS[status];
   const labelText = STATUS_LABELS[status];
 
+  // Load Saira Condensed for the status label; fall back to sans-serif if the CDN is unreachable
+  // so the route still returns a usable image rather than a 500.
+  let sairaData: ArrayBuffer | null = null;
   try {
-    // Load all four fonts in parallel — all are needed before ImageResponse can render
-    const [sairaBuf, dmMono400Buf, dmMono500Buf, dmSansBuf] = await Promise.all([
-      fetchFont('https://fonts.gstatic.com/s/sairacondensed/v11/EJRMQgErUN8XuHNEtX81i9TmEkrnbcpg8Keepi2lHw.ttf'),
-      fetchFont('https://fonts.gstatic.com/s/dmmono/v14/aFTR7PB1QTsUX8KYvrGyIYSnbKX9Rlk.ttf'),
-      fetchFont('https://fonts.gstatic.com/s/dmmono/v14/aFTU7PB1QTsUX8KYth-orYataIf4VllXuA.ttf'),
-      fetchFont('https://fonts.gstatic.com/s/dmsans/v15/rP2tp2ywxg089UriI5-g4vlH9VoD8Cmcqbu6-K6z9mXgjU0.ttf'),
-    ]);
+    sairaData = await fetchFont(SAIRA_URL);
+  } catch (err) {
+    console.error('Saira Condensed fetch failed, rendering in sans-serif fallback:', err);
+  }
 
-    try {
+  const statusLabelFont = sairaData !== null ? 'Saira Condensed' : 'sans-serif';
+  const fontOptions = sairaData !== null
+    ? [{ name: 'Saira Condensed', data: sairaData, weight: 900 as const, style: 'normal' as const }]
+    : [];
+
+  try {
     return new ImageResponse(
       (
         <div
@@ -172,7 +185,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             </div>
             <div
               style={{
-                fontFamily: 'DM Mono',
+                fontFamily: 'sans-serif',
                 fontWeight: 500,
                 fontSize: 18,
                 letterSpacing: '0.20em',
@@ -182,11 +195,11 @@ export async function GET(request: NextRequest): Promise<Response> {
                 display: 'flex',
               }}
             >
-              {team}
+              {teamName}
             </div>
             <div
               style={{
-                fontFamily: 'Saira Condensed',
+                fontFamily: statusLabelFont,
                 fontWeight: 900,
                 fontSize: 96,
                 lineHeight: '82px',
@@ -202,7 +215,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             </div>
             <div
               style={{
-                fontFamily: 'DM Sans',
+                fontFamily: 'sans-serif',
                 fontWeight: 400,
                 fontSize: 16,
                 lineHeight: '24px',
@@ -274,7 +287,7 @@ export async function GET(request: NextRequest): Promise<Response> {
                 </div>
                 <div
                   style={{
-                    fontFamily: 'DM Mono',
+                    fontFamily: 'sans-serif',
                     fontWeight: 400,
                     fontSize: 13,
                     color: '#555555',
@@ -327,7 +340,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             />
             <div
               style={{
-                fontFamily: 'DM Mono',
+                fontFamily: 'sans-serif',
                 fontWeight: 500,
                 fontSize: 16,
                 color: '#C9A84C',
@@ -338,7 +351,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             </div>
             <div
               style={{
-                fontFamily: 'DM Mono',
+                fontFamily: 'sans-serif',
                 fontWeight: 400,
                 fontSize: 13,
                 color: '#444444',
@@ -349,7 +362,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             </div>
             <div
               style={{
-                fontFamily: 'DM Sans',
+                fontFamily: 'sans-serif',
                 fontWeight: 400,
                 fontSize: 12,
                 color: '#444444',
@@ -364,21 +377,12 @@ export async function GET(request: NextRequest): Promise<Response> {
       {
         width: 1200,
         height: 630,
-        fonts: [
-          { name: 'Saira Condensed', data: sairaBuf, weight: 900, style: 'normal' },
-          { name: 'DM Mono', data: dmMono400Buf, weight: 400, style: 'normal' },
-          { name: 'DM Mono', data: dmMono500Buf, weight: 500, style: 'normal' },
-          { name: 'DM Sans', data: dmSansBuf, weight: 400, style: 'normal' },
-        ],
+        fonts: fontOptions,
       }
     );
-    } catch (imgErr) {
-      const msg = imgErr instanceof Error ? imgErr.message : String(imgErr);
-      console.error('ImageResponse generation failed:', msg);
-      throw imgErr;
-    }
-  } catch (err) {
-    console.error('OG image generation failed:', err);
+  } catch (imgErr) {
+    const msg = imgErr instanceof Error ? imgErr.message : String(imgErr);
+    console.error('ImageResponse generation failed:', msg);
     return new Response('Failed to generate image', { status: 500 });
   }
 }

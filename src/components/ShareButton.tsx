@@ -7,7 +7,7 @@ type Props = {
   status: string;
 };
 
-export default function ShareButton({ teamName }: Props) {
+export default function ShareButton({ teamName, status }: Props) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
