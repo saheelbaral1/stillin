@@ -12,6 +12,17 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 type FetchState = "idle" | "loading" | "success" | "stale" | "error";
 
+const VIRAL_MOMENTS = [
+  { emoji: "🪖", headline: "Norway's Vikings", sub: "Team photo in full viking gear went global" },
+  { emoji: "✈️", headline: "Brazil blesses the jet", sub: "Players baptized the team plane before flying out" },
+  { emoji: "🐐", headline: "Messi's last dance", sub: "Argentina captain confirmed this is his final World Cup" },
+  { emoji: "🥁", headline: "Morocco's drummers", sub: "1,000-strong drum circle outside training camp" },
+  { emoji: "🤖", headline: "Japan's AI kit", sub: "Adidas used generative AI to design the kit pattern" },
+  { emoji: "🌊", headline: "NZ's haka moment", sub: "All Whites performed haka for the first time at a WC" },
+  { emoji: "🦁", headline: "England roar back", sub: "Comeback vs Netherlands had fans re-watching the final 10 mins" },
+  { emoji: "🎺", headline: "Vuvuzela returns", sub: "South Africa fans brought them back — FIFA said nothing" },
+];
+
 // The "still in?" wordmark: DM Mono 500, gold, always lowercase.
 // The "?" gets gold-deep to create a subtle two-tone effect (per Wordmark.jsx).
 function Wordmark() {
@@ -134,6 +145,54 @@ export default function HomeClient() {
           {/* search + dropdown */}
           <div style={{ marginTop: 28 }}>
             <TeamPicker onTeamSelect={handleTeamSelect} />
+          </div>
+
+          {/* ── Viral moments strip ── */}
+          <div style={{ marginTop: 36 }}>
+            <p style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: "0.12em",
+              textTransform: "uppercase", color: "var(--group-text)", marginBottom: 12,
+              fontFamily: "var(--font-body)",
+            }}>
+              Around the tournament
+            </p>
+            <div
+              className="hide-scrollbar"
+              style={{
+                display: "flex", gap: 10,
+                overflowX: "auto", paddingBottom: 4,
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              } as React.CSSProperties}
+            >
+              {VIRAL_MOMENTS.map((m) => (
+                <div
+                  key={m.headline}
+                  style={{
+                    flexShrink: 0, width: 148, padding: "14px 14px 12px",
+                    background: "var(--pill-bg)",
+                    border: "1.5px solid var(--pill-border)",
+                    borderRadius: "var(--r-card)",
+                    display: "flex", flexDirection: "column", gap: 6,
+                  }}
+                >
+                  <span style={{ fontSize: 28, lineHeight: 1 }}>{m.emoji}</span>
+                  <span style={{
+                    fontFamily: "var(--font-body)", fontWeight: 600,
+                    fontSize: 12, letterSpacing: "0.02em",
+                    color: "var(--pill-text)", lineHeight: 1.3,
+                  }}>
+                    {m.headline}
+                  </span>
+                  <span style={{
+                    fontFamily: "var(--font-body)", fontSize: 11,
+                    color: "var(--group-text)", lineHeight: 1.4,
+                  }}>
+                    {m.sub}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* spacer pushes footer down */}

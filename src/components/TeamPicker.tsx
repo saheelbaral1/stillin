@@ -100,9 +100,6 @@ function BentoCard({
   );
 }
 
-// Shuffled once at module load — stable across re-renders, different every page load.
-const SHUFFLED_NAMES = [...TEAMS.map((t) => t.name)].sort(() => Math.random() - 0.5);
-
 export default function TeamPicker({ onTeamSelect }: Props) {
   const [query,    setQuery]    = useState("");
   const [focused,  setFocused]  = useState(false);
@@ -110,6 +107,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cancelRef    = useRef(false);
   const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shuffledRef  = useRef<string[]>([]);
 
   // Close dropdown on outside click.
   useEffect(() => {
@@ -129,6 +127,12 @@ export default function TeamPicker({ onTeamSelect }: Props) {
       return;
     }
 
+    // Lazy-initialize on client only — avoids Math.random() running during SSR
+    if (shuffledRef.current.length === 0) {
+      shuffledRef.current = [...TEAMS.map((t) => t.name)].sort(() => Math.random() - 0.5);
+    }
+    const names = shuffledRef.current;
+
     cancelRef.current = false;
     let nameIdx  = 0;
     let charIdx  = 0;
@@ -136,7 +140,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
 
     function tick() {
       if (cancelRef.current) return;
-      const name = SHUFFLED_NAMES[nameIdx % SHUFFLED_NAMES.length];
+      const name = names[nameIdx % names.length];
 
       if (!deleting) {
         charIdx++;
@@ -217,6 +221,7 @@ export default function TeamPicker({ onTeamSelect }: Props) {
               top: "50%",
               transform: "translateY(-50%)",
               pointerEvents: "none",
+              zIndex: 1,
               fontFamily: "var(--font-body)",
               fontSize: 16,
               color: "var(--input-ph)",

@@ -176,6 +176,9 @@
 /* Search input placeholder — adapts to current theme via CSS var */
 .search-input::placeholder { color: var(--input-ph); }
 
+/* Hide scrollbar on horizontal scroll strips */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
 /* Kinetic background — diagonal stripe + radial gold spotlight */
 .kinetic-bg {
   background-image:
