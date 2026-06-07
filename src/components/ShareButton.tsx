@@ -11,7 +11,7 @@ export default function ShareButton({ teamName }: Props) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    const url = `https://stillin.app/?team=${encodeURIComponent(teamName)}`;
+    const url = `https://stillin.vercel.app/?team=${encodeURIComponent(teamName)}&status=${status}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
