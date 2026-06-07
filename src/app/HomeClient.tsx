@@ -15,15 +15,16 @@ type FetchState = "idle" | "loading" | "success" | "stale" | "error";
 type ViralMoment = { emoji: string; headline: string; sub: string; url?: string };
 
 // Static fallback shown until /api/viral returns live Reddit data.
+// Each item links to a Reddit search so they're clickable immediately.
 const STATIC_MOMENTS: ViralMoment[] = [
-  { emoji: "🪖", headline: "Norway's Vikings", sub: "Team photo in full viking gear went global" },
-  { emoji: "✈️", headline: "Brazil blesses the jet", sub: "Players baptized the team plane before flying out" },
-  { emoji: "🐐", headline: "Messi's last dance", sub: "Argentina captain confirmed this is his final World Cup" },
-  { emoji: "🥁", headline: "Morocco's drummers", sub: "1,000-strong drum circle outside training camp" },
-  { emoji: "🤖", headline: "Japan's AI kit", sub: "Adidas used generative AI to design the kit pattern" },
-  { emoji: "🌊", headline: "NZ's haka moment", sub: "All Whites performed haka for the first time at a WC" },
-  { emoji: "🦁", headline: "England roar back", sub: "Comeback vs Netherlands had fans re-watching the final 10 mins" },
-  { emoji: "🎺", headline: "Vuvuzela returns", sub: "South Africa fans brought them back — FIFA said nothing" },
+  { emoji: "🪖", headline: "Norway's Vikings",     sub: "Team photo in full viking gear went global",              url: "https://reddit.com/r/worldcup/search/?q=norway+vikings&sort=top" },
+  { emoji: "✈️", headline: "Brazil blesses the jet", sub: "Players baptized the team plane before flying out",     url: "https://reddit.com/r/worldcup/search/?q=brazil+plane+bless&sort=top" },
+  { emoji: "🐐", headline: "Messi's last dance",   sub: "Argentina captain confirmed this is his final World Cup", url: "https://reddit.com/r/worldcup/search/?q=messi+last+world+cup&sort=top" },
+  { emoji: "🥁", headline: "Morocco's drummers",   sub: "1,000-strong drum circle outside training camp",          url: "https://reddit.com/r/worldcup/search/?q=morocco+drums+fans&sort=top" },
+  { emoji: "🤖", headline: "Japan's AI kit",       sub: "Adidas used generative AI to design the kit pattern",     url: "https://reddit.com/r/worldcup/search/?q=japan+kit+AI&sort=top" },
+  { emoji: "🌊", headline: "NZ's haka moment",     sub: "All Whites performed haka for the first time at a WC",   url: "https://reddit.com/r/worldcup/search/?q=new+zealand+haka&sort=top" },
+  { emoji: "🦁", headline: "England roar back",    sub: "Comeback vs Netherlands had fans re-watching the final 10 mins", url: "https://reddit.com/r/worldcup/search/?q=england+comeback&sort=top" },
+  { emoji: "🎺", headline: "Vuvuzela returns",     sub: "South Africa fans brought them back — FIFA said nothing", url: "https://reddit.com/r/worldcup/search/?q=vuvuzela+south+africa&sort=top" },
 ];
 
 function ViralRow({ moment: m, last }: { moment: ViralMoment; last: boolean }) {
