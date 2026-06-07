@@ -11,4 +11,5 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Trigger standings refresh
-        run: curl -f -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://stillin.vercel.app/api/cron/refresh
+        run: |
+          curl -f -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://stillin.vercel.app/api/cron/refresh
