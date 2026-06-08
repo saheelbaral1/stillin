@@ -11,7 +11,11 @@
 // Per Section 9 of STILLIN_MASTER.md.
 
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
 import { supabaseServer } from "@/lib/supabase-server";
+
+// Switch to "still in? <noreply@stillin.app>" once the domain is verified in Resend.
+const RESEND_FROM = "still in? <onboarding@resend.dev>";
 
 // RFC 5322-lite: good enough to catch obvious typos without a dependency.
 // Intentionally simple — we don't need perfect validation, just a sanity check.
@@ -93,6 +97,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (insertError) {
       throw new Error(`Supabase insert failed: ${insertError.message}`);
+    }
+
+    // Send a confirmation email. Non-fatal — a Resend failure must never cause
+    // the subscription itself to fail. If the key is absent, warn and skip.
+    const resendKey = process.env.RESEND_API_KEY;
+    if (!resendKey) {
+      console.warn("RESEND_API_KEY not set — skipping confirmation email");
+    } else {
+      try {
+        const resend = new Resend(resendKey);
+        await resend.emails.send({
+          from: RESEND_FROM,
+          to: cleanEmail,
+          subject: "You're on the list 🏆",
+          text:
+            `Hey — we've got you. We'll email you the moment ${cleanTeam}'s fate is decided ` +
+            `at the World Cup 2026. Until then, check the live tracker anytime at ` +
+            `https://stillin.vercel.app/?team=${encodeURIComponent(cleanTeam)} ` +
+            `— still in? · for people who are half-watching.`,
+        });
+      } catch (emailErr) {
+        console.warn(
+          "Confirmation email failed:",
+          emailErr instanceof Error ? emailErr.message : emailErr,
+        );
+      }
     }
 
     return NextResponse.json({ ok: true });
