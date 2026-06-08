@@ -1,7 +1,11 @@
 // src/app/api/notify/route.ts
 //
 // POST /api/notify
-// Body: { email: string, team: string }
+// Body: { email: string, team: string, marketing_consent?: boolean }
+//
+// NOTE: marketing_consent requires the following migration to be run manually
+// in Supabase before this field is stored:
+//   ALTER TABLE notifications ADD COLUMN marketing_consent boolean DEFAULT false;
 //
 // Saves an email address to the `notifications` table so the user can be
 // alerted when their team's qualification status is decided (THROUGH or OUT).
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { email, team } = body as Record<string, unknown>;
+  const { email, team, marketing_consent } = body as Record<string, unknown>;
 
   if (typeof email !== "string" || !email.trim()) {
     return NextResponse.json(
@@ -91,9 +95,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // --- Insert the new notification subscription ---
+    // marketing_consent is included only when provided by the client so that
+    // requests from older clients (or before the DB column is added) don't fail.
+    const insertPayload: Record<string, unknown> = { email: cleanEmail, team: cleanTeam };
+    if (typeof marketing_consent === "boolean") {
+      insertPayload.marketing_consent = marketing_consent;
+    }
+
     const { error: insertError } = await supabaseServer
       .from("notifications")
-      .insert({ email: cleanEmail, team: cleanTeam });
+      .insert(insertPayload);
 
     if (insertError) {
       throw new Error(`Supabase insert failed: ${insertError.message}`);

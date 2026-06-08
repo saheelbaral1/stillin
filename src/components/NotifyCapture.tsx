@@ -7,6 +7,7 @@ type UIState = "idle" | "loading" | "success" | "error";
 
 export default function NotifyCapture({ teamName }: Props) {
   const [email,    setEmail]    = useState("");
+  const [consent,  setConsent]  = useState(false);
   const [uiState,  setUiState]  = useState<UIState>("idle");
   const [dismissed,setDismissed]= useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -33,7 +34,7 @@ export default function NotifyCapture({ teamName }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !consent) return;
 
     setUiState("loading");
     setErrorMsg("");
@@ -42,7 +43,7 @@ export default function NotifyCapture({ teamName }: Props) {
       const res = await fetch("/api/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), team: teamName }),
+        body: JSON.stringify({ email: email.trim(), team: teamName, marketing_consent: consent }),
       });
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
@@ -72,6 +73,27 @@ export default function NotifyCapture({ teamName }: Props) {
         Notify me the moment it&apos;s decided
       </p>
 
+      {/* consent checkbox */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 12 }}>
+        <input
+          type="checkbox"
+          id="notify-consent"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          disabled={uiState === "loading"}
+          style={{ accentColor: "#C9A84C", marginTop: 2, flexShrink: 0, cursor: "pointer" }}
+        />
+        <label
+          htmlFor="notify-consent"
+          style={{
+            fontFamily: "var(--font-body)", fontSize: 12,
+            color: "var(--subtitle)", lineHeight: 1.4, cursor: "pointer",
+          }}
+        >
+          I&apos;m happy to receive World Cup updates and news from still in?
+        </label>
+      </div>
+
       {/* input + button */}
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8 }}>
         <input
@@ -95,14 +117,14 @@ export default function NotifyCapture({ teamName }: Props) {
         />
         <button
           type="submit"
-          disabled={uiState === "loading" || !email.trim()}
+          disabled={uiState === "loading" || !email.trim() || !consent}
           style={{
             height: 48, padding: "0 18px", flexShrink: 0,
             background: "var(--btn-bg)", color: "var(--btn-text)",
             border: "none", borderRadius: 12, cursor: "pointer",
             fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14,
             whiteSpace: "nowrap",
-            opacity: uiState === "loading" || !email.trim() ? 0.5 : 1,
+            opacity: uiState === "loading" || !email.trim() || !consent ? 0.5 : 1,
             transition: "opacity var(--dur) var(--ease)",
           }}
         >
