@@ -17,6 +17,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabaseServer } from "@/lib/supabase-server";
+import { getTeamByName } from "@/lib/teams";
+import { buildEmailHtml } from "@/lib/email-templates";
 
 // Switch to "still in? <noreply@stillin.app>" once the domain is verified in Resend.
 const RESEND_FROM = "still in? <onboarding@resend.dev>";
@@ -118,15 +120,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } else {
       try {
         const resend = new Resend(resendKey);
+        const ctaUrl = `https://stillin.vercel.app/?team=${encodeURIComponent(cleanTeam)}`;
+        const flag = getTeamByName(cleanTeam)?.flag ?? "⚽";
         await resend.emails.send({
           from: RESEND_FROM,
           to: cleanEmail,
           subject: "You're on the list 🏆",
+          html: buildEmailHtml({ type: "confirmation", team: cleanTeam, flag, ctaUrl }),
           text:
             `Hey — we've got you. We'll email you the moment ${cleanTeam}'s fate is decided ` +
-            `at the World Cup 2026. Until then, check the live tracker anytime at ` +
-            `https://stillin.vercel.app/?team=${encodeURIComponent(cleanTeam)} ` +
-            `— still in? · for people who are half-watching.`,
+            `at the World Cup 2026. Check live: ${ctaUrl} — still in? · for people who are half-watching.`,
         });
       } catch (emailErr) {
         console.warn(

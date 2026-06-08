@@ -15,6 +15,7 @@ import type { ViralPost, GroupStandings } from "@/lib/balldontlie";
 import { supabaseServer } from "@/lib/supabase-server";
 import { getTeamStatus } from "@/lib/qualification";
 import { TEAMS } from "@/lib/teams";
+import { buildEmailHtml } from "@/lib/email-templates";
 
 // Switch to "still in? <noreply@stillin.app>" once the domain is verified in Resend.
 const RESEND_FROM = "still in? <onboarding@resend.dev>";
@@ -201,10 +202,10 @@ async function checkAndNotify(standings: GroupStandings[]): Promise<void> {
         ? "qualified for the Round of 32"
         : "been eliminated from the World Cup";
     const subject = `${status.flag} ${teamName} are ${status.status === "THROUGH" ? "THROUGH" : "OUT"} — World Cup 2026`;
-    const body =
+    const ctaUrl = `https://stillin.vercel.app/?team=${encodeURIComponent(teamName)}`;
+    const plainText =
       `You asked us to let you know. ${teamName} have ${qualifier}. ` +
-      `See the full picture: https://stillin.vercel.app/?team=${encodeURIComponent(teamName)} ` +
-      `— still in? · for people who are half-watching.`;
+      `See the full picture: ${ctaUrl} — still in? · for people who are half-watching.`;
 
     // Email each subscriber for this team, then mark the row notified.
     for (const row of notifRows.filter((r) => r.team === teamName)) {
@@ -213,7 +214,15 @@ async function checkAndNotify(standings: GroupStandings[]): Promise<void> {
           from: RESEND_FROM,
           to: row.email,
           subject,
-          text: body,
+          html: buildEmailHtml({
+            type: "status",
+            team: teamName,
+            flag: status.flag,
+            status: status.status,
+            message: status.message,
+            ctaUrl,
+          }),
+          text: plainText,
         });
       } catch (emailErr) {
         console.warn(
