@@ -23,6 +23,27 @@
 import type { GroupStandings, TeamRow } from "./balldontlie";
 import type { Team } from "./teams";
 
+// Name aliases: maps from the API / common name to the canonical name stored in
+// teams.ts. Applied to BOTH sides of every comparison (see normTeamName below)
+// so "Turkey" in standings data and "Türkiye" in teams.ts both resolve to the
+// same canonical string, and vice versa.
+const TEAM_ALIASES: Record<string, string> = {
+  turkey:         "türkiye",
+  iran:           "ir iran",
+  "ivory coast":  "côte d'ivoire",
+  "cape verde":   "cabo verde",
+  "dr congo":     "congo dr",
+};
+
+// Normalises a team name for comparison: lower-cases it and resolves any known
+// alias so both sides of a match end up in the same canonical form. This is the
+// single point where API name drift is absorbed — every name comparison in this
+// file routes through here rather than doing its own toLowerCase().
+function normTeamName(name: string): string {
+  const lower = name.trim().toLowerCase();
+  return TEAM_ALIASES[lower] ?? lower;
+}
+
 // Each team plays exactly 3 group-stage matches. Used to compute how many games
 // a team still has left, which drives the mathematical-elimination check.
 const GROUP_STAGE_MATCHES = 3;
@@ -55,17 +76,17 @@ export type TeamStatus = {
 // NOT part of the live standings payload, so it must come from `allTeams`. Falls
 // back to a very large number so an unknown team sorts last rather than first.
 function fifaRankingOf(teamName: string, allTeams: Team[]): number {
-  const target = teamName.trim().toLowerCase();
-  const match = allTeams.find((t) => t.name.toLowerCase() === target);
+  const target = normTeamName(teamName);
+  const match = allTeams.find((t) => normTeamName(t.name) === target);
   return match ? match.fifaRanking : Number.MAX_SAFE_INTEGER;
 }
 
-// Returns the emoji flag for a team name, case-insensitively. Flags live only in
-// the hardcoded teams list, not in the standings rows, so we look them up here.
-// Falls back to an empty string if the team isn't in the list.
+// Returns the emoji flag for a team name. Both the lookup name and the stored
+// name are normalised through normTeamName so API name drift (e.g. "Turkey" vs
+// "Türkiye") does not produce a blank flag. Falls back to empty string.
 function flagOf(teamName: string, allTeams: Team[]): string {
-  const target = teamName.trim().toLowerCase();
-  const match = allTeams.find((t) => t.name.toLowerCase() === target);
+  const target = normTeamName(teamName);
+  const match = allTeams.find((t) => normTeamName(t.name) === target);
   return match ? match.flag : "";
 }
 
@@ -95,10 +116,10 @@ function findTeamInStandings(
   teamName: string,
   allStandings: GroupStandings[],
 ): { groupName: string; row: TeamRow; position: number } | undefined {
-  const target = teamName.trim().toLowerCase();
+  const target = normTeamName(teamName);
   for (const group of allStandings) {
     const index = group.teams.findIndex(
-      (t) => t.team.trim().toLowerCase() === target,
+      (t) => normTeamName(t.team) === target,
     );
     if (index !== -1) {
       return {

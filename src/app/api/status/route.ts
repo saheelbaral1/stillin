@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { getTeamStatus } from "@/lib/qualification";
 import type { GroupStandings } from "@/lib/balldontlie";
-import { TEAMS } from "@/lib/teams";
+import { TEAMS, getTeamByName } from "@/lib/teams";
 
 // How old the cache can be before we refuse to serve it. Section 9: 10 minutes.
 const MAX_CACHE_AGE_MS = 10 * 60 * 1000;
@@ -71,6 +71,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const standings = row.data as GroupStandings[];
 
     const status = getTeamStatus(teamName, standings, TEAMS);
+
+    // Defensive fallback: if the flag is blank (standings name differs from our
+    // teams.ts canonical name, e.g. football-data.org sends "Turkey" but we store
+    // "Türkiye"), resolve it via the alias-aware getTeamByName. Try the standings
+    // name first, then the raw URL param — one of them will hit the alias table.
+    if (!status.flag) {
+      const resolved = getTeamByName(status.team) ?? getTeamByName(teamName);
+      if (resolved) status.flag = resolved.flag;
+    }
 
     // --- 6. Return the full TeamStatus object ---
     return NextResponse.json(status);
