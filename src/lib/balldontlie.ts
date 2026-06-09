@@ -239,16 +239,6 @@ export async function fetchStandings(): Promise<GroupStandings[]> {
   return result.sort((a, b) => a.groupName.localeCompare(b.groupName));
 }
 
-// Shape of a viral post as stored in viral_cache and served by /api/viral.
-// Exported so the cron route and the API route share one definition.
-export type ViralPost = {
-  emoji:    string;  // emoji assigned to the headline by Groq
-  headline: string;  // first ~28 chars of the news title
-  sub:      string;  // full news title up to 90 chars
-  score?:   number;  // optional engagement count (news has none → undefined)
-  url:      string;  // link to the source article
-};
-
 // Fetches matches currently in progress and returns them. The cron job uses
 // this solely to set is_live = true on the cache row so the UI knows to expect
 // fast-changing data. Returns an empty array when no match is live (the common

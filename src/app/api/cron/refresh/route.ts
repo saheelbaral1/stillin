@@ -5,13 +5,13 @@
 //   1. Fetch current group standings from football-data.org.
 //   2. Fetch live games → set is_live flag.
 //   3. Write new row to standings_cache.
-//   4. If viral_cache is older than 30 min, fetch Google News + assign emojis via Groq.
+//   4. Check notification subscriptions → email teams that hit a final state.
 //   5. Return { ok, isLive, timestamp }.
 
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { fetchStandings, fetchLiveMatches } from "@/lib/balldontlie";
-import type { ViralPost, GroupStandings } from "@/lib/balldontlie";
+import type { GroupStandings } from "@/lib/balldontlie";
 import { supabaseServer } from "@/lib/supabase-server";
 import { getTeamStatus } from "@/lib/qualification";
 import { TEAMS } from "@/lib/teams";
@@ -21,173 +21,6 @@ import { buildEmailHtml } from "@/lib/email-templates";
 const RESEND_FROM = "still in? <onboarding@resend.dev>";
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const NEWS_TIMEOUT_MS = 8_000;
-const GROQ_TIMEOUT_MS   = 10_000;
-const VIRAL_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
-
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL   = "llama-3.3-70b-versatile";
-
-type GroqResponse = { choices: Array<{ message: { content: string } }> };
-
-// One story card derived from a raw news headline.
-type Story = { emoji: string; headline: string; sub: string };
-
-// Truncation helper used by the per-item fallback when Groq is unavailable.
-const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n).trimEnd() + "…" : s);
-
-// Builds the fallback card straight from the raw title — used per item whenever
-// Groq is missing, times out, or returns something unparseable for that slot.
-const rawFallback = (title: string): Story => ({
-  emoji: "⚽",
-  headline: clip(title, 28),
-  sub: clip(title, 90),
-});
-
-// Sends all raw news titles to Groq in one call and gets back a polished story
-// card per title: a fitting emoji, a punchy 2–4 word hook, and one clean sentence
-// written for someone half-watching. Groq is told to use ONLY the facts in the
-// title so it never invents scores or quotes. Falls back to the raw title per
-// item if Groq is unavailable or returns an unusable response.
-async function storify(titles: string[]): Promise<Story[]> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey || titles.length === 0) return titles.map(rawFallback);
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
-
-  try {
-    const res = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You turn raw World Cup 2026 news headlines into punchy story cards for a casual-fan app called \"still in?\". " +
-              "For each input headline, output an object with exactly these keys: " +
-              "\"emoji\" (a single emoji capturing the story's vibe — creative, not literal), " +
-              "\"headline\" (a punchy 2-4 word hook in Title Case but keep acronyms uppercase like USA, USMNT, FIFA, VAR; no trailing punctuation; e.g. \"Messi's last dance\" or \"Brazil blesses the jet\"), " +
-              "\"sub\" (ONE clean, complete sentence under 70 characters that tells the story to someone who's half-watching). " +
-              "Use ONLY the information in the input headline — never invent scores, quotes, dates, or facts. Drop the news outlet's name. " +
-              "Return ONLY a valid JSON array of these objects, one per headline, in the same order. No markdown, no commentary.",
-          },
-          {
-            role: "user",
-            content: JSON.stringify(titles),
-          },
-        ],
-        max_tokens: 900,
-        temperature: 0.5,
-      }),
-      signal: controller.signal,
-    });
-
-    if (!res.ok) return titles.map(rawFallback);
-
-    const data = (await res.json()) as GroqResponse;
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? "[]";
-
-    // Strip markdown code fences if Groq wraps the JSON.
-    const cleaned = raw.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, "").trim();
-    const parsed = JSON.parse(cleaned) as Partial<Story>[];
-
-    // Validate each slot; fall back to the raw title for any malformed entry.
-    return titles.map((title, i) => {
-      const s = parsed[i];
-      if (s && typeof s.emoji === "string" && typeof s.headline === "string" && typeof s.sub === "string") {
-        return { emoji: s.emoji, headline: clip(s.headline, 40), sub: clip(s.sub, 90) };
-      }
-      return rawFallback(title);
-    });
-  } catch {
-    return titles.map(rawFallback);
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-// Google News RSS: free, no API key, no auth, and (unlike Reddit) it serves
-// datacenter IPs like Vercel's functions. The feed returns fresh, relevant
-// World Cup 2026 headlines from real outlets, newest first.
-const NEWS_RSS_URL =
-  "https://news.google.com/rss/search?q=World+Cup+2026+when:7d&hl=en-US&gl=US&ceid=US:en";
-
-type NewsItem = { title: string; link: string };
-
-// Decodes the handful of XML/HTML entities Google News emits in titles.
-function decodeEntities(s: string): string {
-  return s
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
-    .trim();
-}
-
-// Parses <item> blocks out of the RSS XML without an XML dependency. Google News
-// titles arrive as "Headline - Source"; we keep the source out of the headline
-// but leave the full string in `sub` so the row still reads naturally.
-function parseRssItems(xml: string): NewsItem[] {
-  const items: NewsItem[] = [];
-  const itemRe = /<item\b[\s\S]*?<\/item>/g;
-  const titleRe = /<title>([\s\S]*?)<\/title>/;
-  const linkRe  = /<link>([\s\S]*?)<\/link>/;
-
-  for (const block of xml.match(itemRe) ?? []) {
-    const title = titleRe.exec(block)?.[1];
-    const link  = linkRe.exec(block)?.[1];
-    if (title && link) {
-      items.push({ title: decodeEntities(title), link: decodeEntities(link) });
-    }
-  }
-  return items;
-}
-
-// Fetches the latest World Cup headlines from Google News, lets Groq pick an
-// emoji for each, and returns up to 8 ViralPost objects. News has no engagement
-// metric, so `score` is left undefined (the UI shows an arrow instead).
-async function fetchNewsPosts(): Promise<ViralPost[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), NEWS_TIMEOUT_MS);
-
-  let items: NewsItem[];
-  try {
-    const res = await fetch(NEWS_RSS_URL, {
-      headers: { "User-Agent": "stillin-app/1.0 (World Cup tracker)" },
-      signal: controller.signal,
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`Google News HTTP ${res.status}`);
-
-    items = parseRssItems(await res.text()).slice(0, 8);
-  } finally {
-    clearTimeout(timeout);
-  }
-
-  if (items.length === 0) return [];
-
-  // Drop the trailing " - Source" Google News appends, then let Groq rewrite each
-  // raw title into a clean, story-sized card (emoji + hook + one-line summary).
-  const cleanTitle = (t: string) => t.replace(/\s+-\s+[^-]+$/, "").trim();
-  const stories = await storify(items.map((it) => cleanTitle(it.title)));
-
-  return stories.map((s, i) => ({
-    emoji:    s.emoji,
-    headline: s.headline,
-    sub:      s.sub,
-    url:      items[i].link,
-  }));
-}
 
 // Shape of a row from the notifications table that we need here.
 type NotifRow = { id: string; email: string; team: string };
@@ -314,29 +147,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       throw new Error(`Supabase insert failed: ${insertError.message}`);
     }
 
-    // 4. Refresh viral cache (latest news headlines) if older than 30 minutes.
-    const { data: viralRows } = await supabaseServer
-      .from("viral_cache")
-      .select("fetched_at")
-      .order("fetched_at", { ascending: false })
-      .limit(1);
-
-    const lastFetch = viralRows?.[0]?.fetched_at
-      ? new Date(viralRows[0].fetched_at as string).getTime()
-      : 0;
-
-    if (Date.now() - lastFetch > VIRAL_REFRESH_INTERVAL_MS) {
-      try {
-        const posts = await fetchNewsPosts();
-        if (posts.length > 0) {
-          await supabaseServer.from("viral_cache").insert({ posts });
-        }
-      } catch {
-        // Non-fatal — standings already written, viral refresh is best-effort.
-      }
-    }
-
-    // 5. Check notification subscriptions and fire status-change emails.
+    // 4. Check notification subscriptions and fire status-change emails.
     try {
       await checkAndNotify(standings);
     } catch {

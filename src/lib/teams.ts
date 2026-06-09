@@ -88,6 +88,18 @@ export const TEAMS: Team[] = [
   { name: "Panama",                 flag: "🇵🇦", fifaRanking: 47, group: "L" },
 ];
 
+// The most-followed teams, surfaced on the homepage "big names" status board.
+// Names must match TEAMS[].name exactly so getTeamStatus can find them in the
+// standings. Order here is the order they render in the board.
+export const FEATURED_TEAMS: string[] = [
+  "Brazil",
+  "Argentina",
+  "France",
+  "England",
+  "Spain",
+  "USA",
+];
+
 // Common aliases that differ from official FIFA names used in this file.
 // The football-data.org API and user inputs often use these alternatives.
 const ALIASES: Record<string, string> = {
