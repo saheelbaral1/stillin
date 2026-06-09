@@ -18,7 +18,7 @@ function formatScore(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-// Static fallback shown until /api/viral returns live Reddit data.
+// Static fallback shown until /api/viral returns live news headlines.
 const STATIC_MOMENTS: ViralMoment[] = [
   { emoji: "🪖", headline: "Norway's Vikings",      sub: "Team photo in full viking gear went global" },
   { emoji: "✈️", headline: "Brazil blesses the jet", sub: "Players baptized the team plane before flying out" },
@@ -252,20 +252,21 @@ export default function HomeClient() {
               }}>
                 What people are talking about
               </p>
-              {/* Reddit badge */}
+              {/* Live news badge */}
               <span style={{
-                display: "inline-flex", alignItems: "center", gap: 3,
-                padding: "2px 7px", borderRadius: 999,
-                background: "#FF4500", color: "#FFFFFF",
-                fontFamily: "var(--font-body)", fontWeight: 700,
-                fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase",
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "2px 8px", borderRadius: 999,
+                background: "var(--gold)", color: "#1A1206",
+                fontFamily: "var(--font-body)", fontWeight: 800,
+                fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase",
                 flexShrink: 0,
               }}>
-                {/* Upvote arrow */}
-                <svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M12 4 L20 16 L4 16 Z"/>
-                </svg>
-                reddit
+                {/* Live pulse dot */}
+                <span style={{
+                  width: 5, height: 5, borderRadius: "50%",
+                  background: "#1A1206", flexShrink: 0,
+                }}/>
+                live news
               </span>
             </div>
             <div>

@@ -5,7 +5,7 @@
 //   1. Fetch current group standings from football-data.org.
 //   2. Fetch live games → set is_live flag.
 //   3. Write new row to standings_cache.
-//   4. If viral_cache is older than 30 min, fetch Reddit + assign emojis via Groq.
+//   4. If viral_cache is older than 30 min, fetch Google News + assign emojis via Groq.
 //   5. Return { ok, isLive, timestamp }.
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,7 +21,7 @@ import { buildEmailHtml } from "@/lib/email-templates";
 const RESEND_FROM = "still in? <onboarding@resend.dev>";
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const REDDIT_TIMEOUT_MS = 8_000;
+const NEWS_TIMEOUT_MS = 8_000;
 const GROQ_TIMEOUT_MS   = 10_000;
 const VIRAL_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
@@ -87,64 +87,85 @@ async function assignEmojis(titles: string[]): Promise<string[]> {
   }
 }
 
-type RedditChild = {
-  data: {
-    title: string;
-    score: number;
-    permalink: string;
-    created_utc: number;
-  };
-};
-type RedditJson = { data: { children: RedditChild[] } };
+// Google News RSS: free, no API key, no auth, and (unlike Reddit) it serves
+// datacenter IPs like Vercel's functions. The feed returns fresh, relevant
+// World Cup 2026 headlines from real outlets, newest first.
+const NEWS_RSS_URL =
+  "https://news.google.com/rss/search?q=World+Cup+2026+when:7d&hl=en-US&gl=US&ceid=US:en";
 
-// Fetches hot posts from r/worldcup+soccer, filters low-quality posts, lets
-// Groq pick the emoji for each title, and returns up to 8 ViralPost objects.
-async function fetchRedditPosts(): Promise<ViralPost[]> {
+type NewsItem = { title: string; link: string };
+
+// Decodes the handful of XML/HTML entities Google News emits in titles.
+function decodeEntities(s: string): string {
+  return s
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .trim();
+}
+
+// Parses <item> blocks out of the RSS XML without an XML dependency. Google News
+// titles arrive as "Headline - Source"; we keep the source out of the headline
+// but leave the full string in `sub` so the row still reads naturally.
+function parseRssItems(xml: string): NewsItem[] {
+  const items: NewsItem[] = [];
+  const itemRe = /<item\b[\s\S]*?<\/item>/g;
+  const titleRe = /<title>([\s\S]*?)<\/title>/;
+  const linkRe  = /<link>([\s\S]*?)<\/link>/;
+
+  for (const block of xml.match(itemRe) ?? []) {
+    const title = titleRe.exec(block)?.[1];
+    const link  = linkRe.exec(block)?.[1];
+    if (title && link) {
+      items.push({ title: decodeEntities(title), link: decodeEntities(link) });
+    }
+  }
+  return items;
+}
+
+// Fetches the latest World Cup headlines from Google News, lets Groq pick an
+// emoji for each, and returns up to 8 ViralPost objects. News has no engagement
+// metric, so `score` is left undefined (the UI shows an arrow instead).
+async function fetchNewsPosts(): Promise<ViralPost[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REDDIT_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), NEWS_TIMEOUT_MS);
 
-  let filtered: RedditChild["data"][];
+  let items: NewsItem[];
   try {
-    const res = await fetch(
-      "https://www.reddit.com/r/worldcup+soccer/hot.json?limit=30",
-      {
-        headers: { "User-Agent": "stillin-app/1.0 (World Cup tracker)" },
-        signal: controller.signal,
-        cache: "no-store",
-      }
-    );
-    if (!res.ok) throw new Error(`Reddit HTTP ${res.status}`);
+    const res = await fetch(NEWS_RSS_URL, {
+      headers: { "User-Agent": "stillin-app/1.0 (World Cup tracker)" },
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`Google News HTTP ${res.status}`);
 
-    const json = (await res.json()) as RedditJson;
-    const sevenDaysAgo = Date.now() / 1000 - 7 * 86400;
-
-    filtered = json.data.children
-      .map((c) => c.data)
-      .filter(
-        (p) =>
-          p.score > 50 &&
-          p.created_utc > sevenDaysAgo &&
-          !p.title.startsWith("[removed]") &&
-          !p.title.startsWith("[deleted]")
-      )
-      .slice(0, 8);
+    items = parseRssItems(await res.text()).slice(0, 8);
   } finally {
     clearTimeout(timeout);
   }
 
-  if (filtered.length === 0) return [];
+  if (items.length === 0) return [];
 
-  // One Groq call assigns all emojis in parallel with the post metadata build.
-  const titles = filtered.map((p) => p.title);
+  // The clean headline drops the trailing " - Source" Google News appends.
+  const cleanTitle = (t: string) => t.replace(/\s+-\s+[^-]+$/, "").trim();
+
+  const titles = items.map((it) => cleanTitle(it.title));
   const emojis = await assignEmojis(titles);
 
-  return filtered.map((p, i) => ({
-    emoji:    emojis[i],
-    headline: p.title.length > 28 ? p.title.slice(0, 28).trimEnd() + "…" : p.title,
-    sub:      p.title.length > 90 ? p.title.slice(0, 90).trimEnd() + "…" : p.title,
-    score:    p.score,
-    url:      `https://reddit.com${p.permalink}`,
-  }));
+  return items.map((it, i) => {
+    const headline = titles[i];
+    return {
+      emoji:    emojis[i],
+      headline: headline.length > 28 ? headline.slice(0, 28).trimEnd() + "…" : headline,
+      sub:      headline.length > 90 ? headline.slice(0, 90).trimEnd() + "…" : headline,
+      url:      it.link,
+    };
+  });
 }
 
 // Shape of a row from the notifications table that we need here.
@@ -272,7 +293,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       throw new Error(`Supabase insert failed: ${insertError.message}`);
     }
 
-    // 4. Refresh viral cache if older than 30 minutes.
+    // 4. Refresh viral cache (latest news headlines) if older than 30 minutes.
     const { data: viralRows } = await supabaseServer
       .from("viral_cache")
       .select("fetched_at")
@@ -285,7 +306,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (Date.now() - lastFetch > VIRAL_REFRESH_INTERVAL_MS) {
       try {
-        const posts = await fetchRedditPosts();
+        const posts = await fetchNewsPosts();
         if (posts.length > 0) {
           await supabaseServer.from("viral_cache").insert({ posts });
         }
