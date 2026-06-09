@@ -30,13 +30,28 @@ const GROQ_MODEL   = "llama-3.3-70b-versatile";
 
 type GroqResponse = { choices: Array<{ message: { content: string } }> };
 
-// Sends all Reddit post titles to Groq in one call and gets back one emoji per
-// title. Groq is far better than keyword matching at picking the right emoji —
-// it understands context, culture, and tone. Falls back to ⚽ per post if Groq
-// is unavailable or returns an unparseable response.
-async function assignEmojis(titles: string[]): Promise<string[]> {
+// One story card derived from a raw news headline.
+type Story = { emoji: string; headline: string; sub: string };
+
+// Truncation helper used by the per-item fallback when Groq is unavailable.
+const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n).trimEnd() + "…" : s);
+
+// Builds the fallback card straight from the raw title — used per item whenever
+// Groq is missing, times out, or returns something unparseable for that slot.
+const rawFallback = (title: string): Story => ({
+  emoji: "⚽",
+  headline: clip(title, 28),
+  sub: clip(title, 90),
+});
+
+// Sends all raw news titles to Groq in one call and gets back a polished story
+// card per title: a fitting emoji, a punchy 2–4 word hook, and one clean sentence
+// written for someone half-watching. Groq is told to use ONLY the facts in the
+// title so it never invents scores or quotes. Falls back to the raw title per
+// item if Groq is unavailable or returns an unusable response.
+async function storify(titles: string[]): Promise<Story[]> {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey || titles.length === 0) return titles.map(() => "⚽");
+  if (!apiKey || titles.length === 0) return titles.map(rawFallback);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
@@ -54,34 +69,44 @@ async function assignEmojis(titles: string[]): Promise<string[]> {
           {
             role: "system",
             content:
-              "You pick one emoji per World Cup news headline. " +
-              "Choose the emoji that best captures the story's vibe — be creative and fun, not literal. " +
-              "Return ONLY a valid JSON array of emoji strings, one per headline, in the same order. " +
-              "No text, no explanation, no markdown — just the raw JSON array.",
+              "You turn raw World Cup 2026 news headlines into punchy story cards for a casual-fan app called \"still in?\". " +
+              "For each input headline, output an object with exactly these keys: " +
+              "\"emoji\" (a single emoji capturing the story's vibe — creative, not literal), " +
+              "\"headline\" (a punchy 2-4 word hook in Title Case but keep acronyms uppercase like USA, USMNT, FIFA, VAR; no trailing punctuation; e.g. \"Messi's last dance\" or \"Brazil blesses the jet\"), " +
+              "\"sub\" (ONE clean, complete sentence under 70 characters that tells the story to someone who's half-watching). " +
+              "Use ONLY the information in the input headline — never invent scores, quotes, dates, or facts. Drop the news outlet's name. " +
+              "Return ONLY a valid JSON array of these objects, one per headline, in the same order. No markdown, no commentary.",
           },
           {
             role: "user",
             content: JSON.stringify(titles),
           },
         ],
-        max_tokens: 150,
-        temperature: 0.4,
+        max_tokens: 900,
+        temperature: 0.5,
       }),
       signal: controller.signal,
     });
 
-    if (!res.ok) return titles.map(() => "⚽");
+    if (!res.ok) return titles.map(rawFallback);
 
     const data = (await res.json()) as GroqResponse;
     const raw = data.choices?.[0]?.message?.content?.trim() ?? "[]";
 
-    // Strip markdown code fences if Groq wraps the JSON
+    // Strip markdown code fences if Groq wraps the JSON.
     const cleaned = raw.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, "").trim();
-    const emojis = JSON.parse(cleaned) as string[];
+    const parsed = JSON.parse(cleaned) as Partial<Story>[];
 
-    return titles.map((_, i) => (typeof emojis[i] === "string" ? emojis[i] : "⚽"));
+    // Validate each slot; fall back to the raw title for any malformed entry.
+    return titles.map((title, i) => {
+      const s = parsed[i];
+      if (s && typeof s.emoji === "string" && typeof s.headline === "string" && typeof s.sub === "string") {
+        return { emoji: s.emoji, headline: clip(s.headline, 40), sub: clip(s.sub, 90) };
+      }
+      return rawFallback(title);
+    });
   } catch {
-    return titles.map(() => "⚽");
+    return titles.map(rawFallback);
   } finally {
     clearTimeout(timeout);
   }
@@ -151,21 +176,17 @@ async function fetchNewsPosts(): Promise<ViralPost[]> {
 
   if (items.length === 0) return [];
 
-  // The clean headline drops the trailing " - Source" Google News appends.
+  // Drop the trailing " - Source" Google News appends, then let Groq rewrite each
+  // raw title into a clean, story-sized card (emoji + hook + one-line summary).
   const cleanTitle = (t: string) => t.replace(/\s+-\s+[^-]+$/, "").trim();
+  const stories = await storify(items.map((it) => cleanTitle(it.title)));
 
-  const titles = items.map((it) => cleanTitle(it.title));
-  const emojis = await assignEmojis(titles);
-
-  return items.map((it, i) => {
-    const headline = titles[i];
-    return {
-      emoji:    emojis[i],
-      headline: headline.length > 28 ? headline.slice(0, 28).trimEnd() + "…" : headline,
-      sub:      headline.length > 90 ? headline.slice(0, 90).trimEnd() + "…" : headline,
-      url:      it.link,
-    };
-  });
+  return stories.map((s, i) => ({
+    emoji:    s.emoji,
+    headline: s.headline,
+    sub:      s.sub,
+    url:      items[i].link,
+  }));
 }
 
 // Shape of a row from the notifications table that we need here.
